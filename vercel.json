@@ -1,8 +1,7 @@
 {
   "rootDirectory": "SentenceStash",
-  "buildCommand": "cd SentenceStash && npm install && npm run build",
-  "outputDirectory": "SentenceStash/dist/public",
-  "installCommand": "cd SentenceStash && npm install",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/public",
   "framework": null,
   "rewrites": [
     {
@@ -15,7 +14,7 @@
     }
   ],
   "functions": {
-    "SentenceStash/api/index.ts": {
+    "api/index.ts": {
       "runtime": "nodejs20.x",
       "maxDuration": 30,
       "memory": 1024
