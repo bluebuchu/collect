@@ -1,19 +1,40 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { User } from "@shared/schema";
+import { getToken, setToken, removeToken, getAuthHeaders } from "@/lib/auth";
 
 export function useAuth() {
   const { data: user, isLoading, error } = useQuery<User>({
     queryKey: ["/api/auth/me"],
+    queryFn: async () => {
+      const token = getToken();
+      if (!token) {
+        throw new Error('No token');
+      }
+      
+      const response = await fetch("/api/auth/me", {
+        headers: {
+          ...getAuthHeaders(),
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Not authenticated');
+      }
+      
+      const data = await response.json();
+      return data.user;
+    },
     retry: false,
     staleTime: 0,
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     refetchInterval: false,
+    enabled: !!getToken(),
   });
 
   const isAuthenticated = !!user && !error;
-  console.log("useAuth:", { user: user?.nickname, isLoading, error: error?.message, isAuthenticated });
+  console.log("useAuth:", { user: user?.username, isLoading, error: error?.message, isAuthenticated });
 
   return {
     user,
@@ -50,6 +71,12 @@ export function useLogin() {
 
       const result = await response.json();
       console.log("Login success:", result);
+      
+      // Store the token
+      if (result.token) {
+        setToken(result.token);
+      }
+      
       return result;
     },
     onSuccess: (data) => {
@@ -72,6 +99,13 @@ export function useRegister() {
     }) => {
       console.log("Attempting register for:", userData.email);
       
+      // Map nickname to username for the API
+      const registerData = {
+        email: userData.email,
+        password: userData.password,
+        username: userData.nickname,
+      };
+      
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: {
@@ -79,7 +113,7 @@ export function useRegister() {
         },
         credentials: "include",
         mode: "cors",
-        body: JSON.stringify(userData),
+        body: JSON.stringify(registerData),
       });
 
       console.log("Register response status:", response.status);
@@ -87,11 +121,17 @@ export function useRegister() {
       if (!response.ok) {
         const error = await response.json();
         console.error("Register error response:", error);
-        throw new Error(error.message || "회원가입에 실패했습니다.");
+        throw new Error(error.error || "회원가입에 실패했습니다.");
       }
 
       const result = await response.json();
       console.log("Register success:", result);
+      
+      // Store the token
+      if (result.token) {
+        setToken(result.token);
+      }
+      
       return result;
     },
     onSuccess: (data) => {
@@ -107,16 +147,9 @@ export function useLogout() {
   
   return useMutation({
     mutationFn: async () => {
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("로그아웃에 실패했습니다.");
-      }
-
-      return response.json();
+      // Simply remove the token for logout
+      removeToken();
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.clear();
