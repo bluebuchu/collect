@@ -10,7 +10,11 @@
       "Bash(git push:*)",
       "Bash(git config:*)",
       "Bash(git remote get-url:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(npm i:*)",
+      "Bash(npx vercel:*)",
+      "Bash(cp:*)",
+      "Bash(true)"
     ],
     "deny": [],
     "ask": []
