@@ -14,13 +14,18 @@ const app = express();
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   
-  // In production, allow your actual domain
-  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
-    'https://your-domain.vercel.app',
-    'https://your-custom-domain.com'
-  ];
+  // Allow Vercel domains and configured origins
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
   
-  if (origin && (allowedOrigins.includes(origin) || allowedOrigins.includes('*'))) {
+  // Always allow Vercel preview and production domains
+  const isVercelDomain = origin && (
+    origin.includes('.vercel.app') || 
+    origin.includes('.vercel.sh') ||
+    origin === 'http://localhost:5173' ||
+    origin === 'http://localhost:3000'
+  );
+  
+  if (origin && (allowedOrigins.includes(origin) || allowedOrigins.includes('*') || isVercelDomain)) {
     res.header('Access-Control-Allow-Origin', origin);
   }
   
@@ -43,10 +48,10 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: true, // Always true in production
+    secure: process.env.NODE_ENV === 'production', // Only secure in production
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    sameSite: 'lax'
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // 'none' for cross-origin in production
   },
   name: 'sessionId'
 }));
@@ -72,8 +77,15 @@ app.get('*', (req, res) => {
 // Error handling
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error('Server error:', err);
+  console.error('Error stack:', err.stack);
+  console.error('Request URL:', req.url);
+  console.error('Request method:', req.method);
+  
   const status = err.status || err.statusCode || 500;
-  const message = err.message || "Internal Server Error";
+  const message = process.env.NODE_ENV === 'production' 
+    ? "Internal Server Error" 
+    : err.message || "Internal Server Error";
+    
   res.status(status).json({ error: message });
 });
 
