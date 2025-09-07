@@ -14,7 +14,10 @@
       "Bash(npm i:*)",
       "Bash(npx vercel:*)",
       "Bash(cp:*)",
-      "Bash(true)"
+      "Bash(true)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(git remote set-url:*)",
+      "Bash(git fetch:*)"
     ],
     "deny": [],
     "ask": []
