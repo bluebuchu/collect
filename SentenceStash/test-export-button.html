@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Export Button Test</title>
+</head>
+<body>
+    <h1>내보내기 버튼 테스트</h1>
+    <script>
+        // 페이지에서 내보내기 버튼 찾기
+        setTimeout(() => {
+            fetch('http://localhost:3000/')
+                .then(res => res.text())
+                .then(html => {
+                    console.log('HTML 길이:', html.length);
+                    console.log('내보내기 포함:', html.includes('내보내기'));
+                    
+                    // React 앱이 마운트되었는지 확인
+                    const hasRoot = html.includes('id="root"');
+                    console.log('Root 엘리먼트:', hasRoot);
+                });
+                
+            // API 테스트
+            fetch('http://localhost:3000/api/auth/me', { credentials: 'include' })
+                .then(res => res.json())
+                .then(data => console.log('Auth 상태:', data))
+                .catch(err => console.log('Auth 에러:', err));
+        }, 1000);
+    </script>
+    <p>콘솔을 확인하세요 (F12)</p>
+</body>
+</html>
