@@ -5,6 +5,8 @@ import AuthModal from "@/components/auth-modal";
 export default function Landing() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<"login" | "register">("login");
+  const [videoLoaded, setVideoLoaded] = useState(false);
+  const [videoError, setVideoError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Set video playback rate to 0.7x
@@ -26,21 +28,33 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen relative flex items-center justify-center px-6 py-8 lg:px-12 lg:py-16 overflow-hidden">
+      {/* Fallback gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-amber-950 dark:via-orange-950 dark:to-yellow-950 z-0" />
+      
       {/* Background Video */}
-      <video
-        ref={videoRef}
-        autoPlay
-        muted
-        loop
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover z-0"
-        onError={(e) => {
-          console.error("Video failed to load:", e);
-        }}
-      >
-        <source src="/background-video.mp4" type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
+      {!videoError && (
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          loop
+          playsInline
+          className={`absolute inset-0 w-full h-full object-cover z-5 transition-opacity duration-1000 ${
+            videoLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
+          onLoadedData={() => {
+            console.log("Video loaded successfully");
+            setVideoLoaded(true);
+          }}
+          onError={(e) => {
+            console.error("Video failed to load:", e);
+            setVideoError(true);
+          }}
+        >
+          <source src="/background-video.mp4" type="video/mp4" />
+          <source src="./background-video.mp4" type="video/mp4" />
+        </video>
+      )}
       
       {/* Overlay for better text readability */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/30 to-black/40 z-10"></div>
