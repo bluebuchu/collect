@@ -1,32 +1,15 @@
 {
-  "buildCommand": "npm ci && npm run build:serverless",
-  "outputDirectory": "dist/public",
-  "installCommand": "npm ci --include=optional",
-  "functions": {
-    "api/index.js": {
-      "maxDuration": 30,
-      "includeFiles": "dist/**"
-    }
-  },
-  "rewrites": [
+  "version": 2,
+  "builds": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/index"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/$1"
+      "src": "index.js",
+      "use": "@vercel/node"
     }
   ],
-  "headers": [
+  "routes": [
     {
-      "source": "/background-video.mp4",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
+      "src": "/(.*)",
+      "dest": "index.js"
     }
   ]
 }
