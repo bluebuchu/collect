@@ -47,11 +47,11 @@
     "@sendgrid/mail": "^8.1.5",
     "@supabase/supabase-js": "^2.56.1",
     "@tanstack/react-query": "^5.60.5",
-    "@types/bcrypt": "^5.0.2",
+    "@types/bcryptjs": "^3.0.0",
     "@types/memoizee": "^0.4.12",
     "@types/multer": "^1.4.13",
     "@types/pg": "^8.15.5",
-    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -122,7 +122,7 @@
     "vite": "^5.4.14"
   },
   "optionalDependencies": {
-    "bufferutil": "^4.0.8",
-    "@rollup/rollup-linux-x64-gnu": "^4.27.5"
+    "@rollup/rollup-linux-x64-gnu": "^4.27.5",
+    "bufferutil": "^4.0.8"
   }
 }

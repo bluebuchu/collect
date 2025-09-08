@@ -2107,7 +2107,7 @@ var import_bcrypt, import_crypto, import_drizzle_orm2, import_passport, import_p
 var init_auth = __esm({
   "server/auth.ts"() {
     "use strict";
-    import_bcrypt = __toESM(require("bcrypt"));
+    import_bcrypt = __toESM(require("bcryptjs"));
     import_crypto = __toESM(require("crypto"));
     init_db();
     init_schema();

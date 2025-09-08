@@ -3,7 +3,7 @@ const path = require("path");
 const dotenv = require("dotenv");
 const session = require("express-session");
 const passport = require("passport");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 // Load environment variables

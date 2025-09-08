@@ -1,6 +1,6 @@
 import { db } from './server/db.ts';
 import { users, sentences } from './shared/schema.ts';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 
 dotenv.config();

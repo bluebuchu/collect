@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { db } from './db';
 import { users, sessions, passwordResetTokens } from '@shared/schema';
