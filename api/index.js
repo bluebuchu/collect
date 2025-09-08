@@ -1,45 +1,50 @@
 // Vercel serverless function handler
 export default async function handler(req, res) {
   try {
-    // Dynamic import to avoid build issues
-    const { default: app } = await import('../dist/index.js');
+    console.log('API handler called:', req.method, req.url);
     
-    // Ensure response is JSON for errors
-    const originalSend = res.send;
-    const originalJson = res.json;
+    // Dynamic import the serverless-optimized Express app
+    const { default: app } = await import('../dist/serverless.js');
     
-    res.send = function(data) {
-      // If sending non-JSON error, convert to JSON
-      if (res.statusCode >= 400 && typeof data === 'string') {
-        res.setHeader('Content-Type', 'application/json');
-        return originalJson.call(this, { error: data });
-      }
-      return originalSend.call(this, data);
-    };
-    
-    // Handle the request with Express app
+    // Create a promise to handle the Express app
     return new Promise((resolve, reject) => {
+      // Add error handling for response
+      const originalEnd = res.end;
+      res.end = function(...args) {
+        resolve();
+        return originalEnd.apply(this, args);
+      };
+      
+      // Handle the request with Express app
       app(req, res, (err) => {
         if (err) {
-          console.error('Express app error:', err);
+          console.error('Express handler error:', err);
           if (!res.headersSent) {
             res.status(500).json({ 
               error: 'Internal server error',
-              message: err.message 
+              message: process.env.NODE_ENV === 'development' ? err.message : 'An error occurred'
             });
           }
           reject(err);
-        } else {
-          resolve();
         }
       });
+      
+      // Set a timeout to prevent hanging
+      setTimeout(() => {
+        if (!res.headersSent) {
+          console.error('Request timeout');
+          res.status(504).json({ error: 'Gateway timeout' });
+          reject(new Error('Request timeout'));
+        }
+      }, 29000); // Vercel has 30s limit
     });
   } catch (error) {
-    console.error('Handler error:', error);
+    console.error('Handler initialization error:', error);
     if (!res.headersSent) {
       res.status(500).json({ 
         error: 'Server initialization failed',
-        message: error.message 
+        message: process.env.NODE_ENV === 'development' ? error.message : 'Failed to initialize server',
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }
   }
