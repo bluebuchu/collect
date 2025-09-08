@@ -3,7 +3,6 @@
   "outputDirectory": "dist/public",
   "functions": {
     "api/index.js": {
-      "runtime": "@vercel/node@20",
       "maxDuration": 30
     }
   },
