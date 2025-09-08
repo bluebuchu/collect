@@ -1,9 +1,20 @@
 const express = require("express");
 const path = require("path");
 const dotenv = require("dotenv");
+const session = require("express-session");
+const passport = require("passport");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 // Load environment variables
 dotenv.config();
+
+// Import database
+const { createClient } = require("@supabase/supabase-js");
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+);
 
 // Create Express app
 const app = express();
@@ -14,12 +25,10 @@ app.use(express.urlencoded({ extended: false }));
 
 // Security headers
 app.use((req, res, next) => {
-  // Security headers
   res.header('X-Content-Type-Options', 'nosniff');
   res.header('X-Frame-Options', 'DENY');
   res.header('X-XSS-Protection', '1; mode=block');
   res.header('Referrer-Policy', 'strict-origin-when-cross-origin');
-  
   next();
 });
 
@@ -53,54 +62,263 @@ app.use((req, res, next) => {
   next();
 });
 
+// Session configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'sentence-collection-secret-key-2025',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    sameSite: 'lax'
+  },
+  name: 'sessionId'
+}));
+
+// Passport initialization
+app.use(passport.initialize());
+app.use(passport.session());
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Test endpoint for communities
-app.get('/api/communities/all', (req, res) => {
-  // Return mock data for now to test deployment
-  res.json({
-    communities: [],
-    total: 0,
-    message: "Database connection not configured in this simplified version"
-  });
-});
-
-// Test endpoint for sentences
-app.get('/api/sentences', (req, res) => {
-  res.json({
-    sentences: [],
-    total: 0,
-    message: "Database connection not configured in this simplified version"
-  });
-});
-
 // Auth endpoints
-app.post('/api/auth/login', (req, res) => {
-  res.status(503).json({ 
-    error: "Authentication service temporarily unavailable",
-    message: "Please use the full application with database connection"
-  });
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+    
+    if (!username || !email || !password) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+    
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Create user in database
+    const { data, error } = await supabase
+      .from('users')
+      .insert([{ 
+        username, 
+        email, 
+        password: hashedPassword,
+        created_at: new Date().toISOString()
+      }])
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Registration error:', error);
+      if (error.code === '23505') {
+        return res.status(409).json({ error: 'User already exists' });
+      }
+      return res.status(500).json({ error: 'Registration failed' });
+    }
+    
+    // Generate token
+    const token = jwt.sign(
+      { id: data.id, username: data.username },
+      process.env.SESSION_SECRET || 'secret',
+      { expiresIn: '7d' }
+    );
+    
+    res.json({ 
+      user: { id: data.id, username: data.username, email: data.email },
+      token 
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
-app.get('/api/auth/me', (req, res) => {
-  res.status(401).json({ 
-    error: "Not authenticated",
-    message: "Authentication requires database connection"
-  });
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required' });
+    }
+    
+    // Find user
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('username', username)
+      .single();
+    
+    if (error || !user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    // Verify password
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    // Generate token
+    const token = jwt.sign(
+      { id: user.id, username: user.username },
+      process.env.SESSION_SECRET || 'secret',
+      { expiresIn: '7d' }
+    );
+    
+    res.json({ 
+      user: { id: user.id, username: user.username, email: user.email },
+      token 
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/auth/me', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    
+    const token = authHeader.replace('Bearer ', '');
+    const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'secret');
+    
+    // Get user from database
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, username, email, profile_image_url')
+      .eq('id', decoded.id)
+      .single();
+    
+    if (error || !user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+    
+    res.json({ user });
+  } catch (error) {
+    console.error('Auth check error:', error);
+    res.status(401).json({ error: 'Invalid token' });
+  }
+});
+
+// Communities endpoints
+app.get('/api/communities/all', async (req, res) => {
+  try {
+    const { data: communities, error } = await supabase
+      .from('communities')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(20);
+    
+    if (error) {
+      console.error('Communities fetch error:', error);
+      return res.status(500).json({ error: 'Failed to fetch communities' });
+    }
+    
+    res.json({ 
+      communities: communities || [],
+      total: communities?.length || 0
+    });
+  } catch (error) {
+    console.error('Communities error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Sentences endpoints
+app.get('/api/sentences', async (req, res) => {
+  try {
+    const { data: sentences, error } = await supabase
+      .from('sentences')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50);
+    
+    if (error) {
+      console.error('Sentences fetch error:', error);
+      return res.status(500).json({ error: 'Failed to fetch sentences' });
+    }
+    
+    res.json({ 
+      sentences: sentences || [],
+      total: sentences?.length || 0
+    });
+  } catch (error) {
+    console.error('Sentences error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/sentences', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    
+    const token = authHeader.replace('Bearer ', '');
+    const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'secret');
+    
+    const { content, bookTitle, author, page } = req.body;
+    
+    if (!content || !bookTitle) {
+      return res.status(400).json({ error: 'Content and book title are required' });
+    }
+    
+    const { data, error } = await supabase
+      .from('sentences')
+      .insert([{
+        content,
+        book_title: bookTitle,
+        author,
+        page_number: page,
+        user_id: decoded.id,
+        created_at: new Date().toISOString()
+      }])
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Sentence creation error:', error);
+      return res.status(500).json({ error: 'Failed to create sentence' });
+    }
+    
+    res.json(data);
+  } catch (error) {
+    console.error('Sentence creation error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Books endpoints
+app.get('/api/books/search', async (req, res) => {
+  try {
+    const { query } = req.query;
+    
+    if (!query) {
+      return res.status(400).json({ error: 'Search query is required' });
+    }
+    
+    // For now, return empty results (Aladin API integration needed)
+    res.json({ 
+      books: [],
+      message: 'Book search API integration pending'
+    });
+  } catch (error) {
+    console.error('Book search error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-  // Serve client build files
   const publicPath = path.join(__dirname, 'dist', 'public');
   app.use(express.static(publicPath));
   
-  // Catch all routes and serve index.html for client-side routing
   app.get('*', (req, res) => {
-    // Skip API routes
     if (req.path.startsWith('/api')) {
       return res.status(404).json({ error: 'API endpoint not found' });
     }
