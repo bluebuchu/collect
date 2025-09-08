@@ -9,12 +9,35 @@ const jwt = require("jsonwebtoken");
 // Load environment variables
 dotenv.config();
 
+// Validate required environment variables
+const requiredEnvVars = ['SUPABASE_URL', 'SUPABASE_ANON_KEY'];
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingEnvVars.length > 0) {
+  console.error('❌ Missing required environment variables:', missingEnvVars.join(', '));
+  console.error('Please set these variables in Vercel Dashboard > Settings > Environment Variables');
+  if (process.env.VERCEL) {
+    console.error('Running on Vercel but environment variables are not configured!');
+  }
+}
+
 // Import database
 const { createClient } = require("@supabase/supabase-js");
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-);
+
+// Initialize Supabase with fallback values for development
+const supabaseUrl = process.env.SUPABASE_URL || 'https://upemqhahrliikgtqqeor.supabase.co';
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwZW1xaGFocmxpaWtndHFxZW9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY2MjMwODUsImV4cCI6MjA3MjE5OTA4NX0.d64QdZZnEcgAg0ncVh2SpiFUBERcRU6_NQrUeLT817s';
+
+if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === 'undefined' || supabaseAnonKey === 'undefined') {
+  console.error('⚠️ Supabase configuration is missing or invalid!');
+}
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+console.log('🚀 Server starting with configuration:');
+console.log('- Environment:', process.env.NODE_ENV || 'development');
+console.log('- Vercel:', process.env.VERCEL ? 'Yes' : 'No');
+console.log('- Supabase URL:', supabaseUrl ? '✅ Configured' : '❌ Missing');
 
 // Create Express app
 const app = express();
@@ -81,8 +104,51 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/api/health', async (req, res) => {
+  const health = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    vercel: !!process.env.VERCEL,
+    supabase: {
+      url: process.env.SUPABASE_URL ? 'configured' : 'missing',
+      key: process.env.SUPABASE_ANON_KEY ? 'configured' : 'missing'
+    }
+  };
+  
+  // Test Supabase connection
+  try {
+    const { data, error } = await supabase.from('users').select('count').limit(1);
+    health.database = error ? `error: ${error.message}` : 'connected';
+  } catch (err) {
+    health.database = `error: ${err.message}`;
+  }
+  
+  res.json(health);
+});
+
+// Environment configuration diagnostic endpoint (development only)
+app.get('/api/env-check', (req, res) => {
+  if (process.env.NODE_ENV === 'production' && !req.query.debug) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  
+  const envStatus = {
+    required: {
+      SUPABASE_URL: !!process.env.SUPABASE_URL,
+      SUPABASE_ANON_KEY: !!process.env.SUPABASE_ANON_KEY,
+      SESSION_SECRET: !!process.env.SESSION_SECRET,
+    },
+    optional: {
+      NODE_ENV: process.env.NODE_ENV || 'not set',
+      VERCEL: !!process.env.VERCEL,
+      VERCEL_URL: process.env.VERCEL_URL || 'not set',
+      PORT: process.env.PORT || 'not set'
+    },
+    message: 'If any required variables are false, set them in Vercel Dashboard > Settings > Environment Variables'
+  };
+  
+  res.json(envStatus);
 });
 
 // Auth endpoints
@@ -96,6 +162,15 @@ app.post('/api/auth/register', async (req, res) => {
     
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Check if Supabase is properly configured
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+      console.error('Registration failed: Supabase not configured');
+      return res.status(503).json({ 
+        error: 'Service temporarily unavailable. Database configuration missing.',
+        details: 'Please configure environment variables in Vercel Dashboard'
+      });
+    }
     
     // Create user in database
     const { data, error } = await supabase
@@ -140,6 +215,15 @@ app.post('/api/auth/login', async (req, res) => {
     
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password are required' });
+    }
+    
+    // Check if Supabase is properly configured
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+      console.error('Login failed: Supabase not configured');
+      return res.status(503).json({ 
+        error: 'Service temporarily unavailable. Database configuration missing.',
+        details: 'Please configure environment variables in Vercel Dashboard'
+      });
     }
     
     // Find user
