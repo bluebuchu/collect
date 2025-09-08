@@ -8,6 +8,8 @@
 @layer base {
   body {
     font-family: 'ChosunilboNM', 'Georgia', serif;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
   
   h1, h2, h3, h4, h5, h6 {
