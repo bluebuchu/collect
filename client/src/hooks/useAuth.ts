@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { User } from "@shared/schema";
 import { getToken, setToken, removeToken, getAuthHeaders } from "@/lib/auth";
+import { fetchAPI } from "@/lib/api-helper";
 
 export function useAuth() {
   const { data: user, isLoading, error } = useQuery<User>({
@@ -12,18 +13,14 @@ export function useAuth() {
         throw new Error('No token');
       }
       
-      const response = await fetch("/api/auth/me", {
-        headers: {
-          ...getAuthHeaders(),
-        },
-      });
-      
-      if (!response.ok) {
+      try {
+        const data = await fetchAPI("/api/auth/me", {
+          headers: getAuthHeaders(),
+        });
+        return data.user;
+      } catch (error) {
         throw new Error('Not authenticated');
       }
-      
-      const data = await response.json();
-      return data.user;
     },
     retry: false,
     staleTime: 0,
