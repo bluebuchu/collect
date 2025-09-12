@@ -47,11 +47,11 @@ const sessionConfig: session.SessionOptions = {
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: false, // Allow cookies over HTTP for now
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    sameSite: 'lax',
-    domain: process.env.NODE_ENV === 'production' ? '.vercel.app' : 'localhost'
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    // Remove domain setting to let browser handle it automatically
   },
   store: new MemoryStoreConstructor({
     checkPeriod: 86400000 // prune expired entries every 24h
