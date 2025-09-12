@@ -280,10 +280,7 @@ router.post("/api/sentences", requireAuth, async (req: AuthRequest, res) => {
     const { communityId, ...sentenceData } = validatedData;
     
     console.log("Creating sentence with validated data:", sentenceData);
-    const newSentence = await storage.createSentence({
-      ...sentenceData,
-      userId
-    });
+    const newSentence = await storage.createSentence(sentenceData, userId);
     
     // If communityId is provided, add the sentence to the community
     if (communityId && newSentence.id) {

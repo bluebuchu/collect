@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { getStorage } from "../storage";
+import { requireAuth, type AuthRequest } from "../auth";
 
 const router = Router();
 
@@ -112,12 +113,12 @@ router.get("/api/books/popular", async (req, res) => {
 });
 
 // Get my books (books from user's sentences)
-router.get("/api/books/my-books", async (req: any, res) => {
+router.get("/api/books/my-books", requireAuth, async (req: AuthRequest, res) => {
   try {
     // Get userId from JWT or session
     const userId = req.user?.id || req.session?.userId;
     if (!userId) {
-      return res.json([]); // Return empty array if not authenticated
+      return res.status(401).json({ error: "인증이 필요합니다" });
     }
     
     const storage = getStorage();
