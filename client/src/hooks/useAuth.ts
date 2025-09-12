@@ -138,7 +138,10 @@ export function useRegister() {
       const result = await response.json();
       console.log("Register success:", result);
       
-      // Session-based auth, no token needed
+      // Store JWT token if provided
+      if (result.token) {
+        setToken(result.token);
+      }
       
       return result;
     },

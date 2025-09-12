@@ -64,6 +64,13 @@ router.post("/api/auth/register", async (req, res) => {
       password: hashedPassword,
     });
     
+    // Generate JWT token for new user
+    const token = generateToken({
+      userId: newUser.id,
+      email: newUser.email,
+      nickname: newUser.nickname
+    });
+    
     req.session.userId = newUser.id;
     req.session.user = newUser;
     
@@ -75,6 +82,7 @@ router.post("/api/auth/register", async (req, res) => {
         profileImage: newUser.profileImage,
         bio: newUser.bio
       },
+      token,
       message: "회원가입이 완료되었습니다"
     });
   } catch (error: any) {
