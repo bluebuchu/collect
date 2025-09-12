@@ -8,15 +8,17 @@ export function useAuth() {
   const { data: user, isLoading, error } = useQuery<User>({
     queryKey: ["/api/auth/me"],
     queryFn: async () => {
-      const token = getToken();
-      if (!token) {
-        throw new Error('No token');
-      }
-      
       try {
-        const data = await fetchAPI("/api/auth/me", {
-          headers: getAuthHeaders(),
+        const response = await fetch("/api/auth/me", {
+          method: "GET",
+          credentials: "include",
         });
+        
+        if (!response.ok) {
+          throw new Error('Not authenticated');
+        }
+        
+        const data = await response.json();
         return data.user;
       } catch (error) {
         throw new Error('Not authenticated');
@@ -27,11 +29,10 @@ export function useAuth() {
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     refetchInterval: false,
-    enabled: !!getToken(),
   });
 
   const isAuthenticated = !!user && !error;
-  console.log("useAuth:", { user: user?.username, isLoading, error: error?.message, isAuthenticated });
+  console.log("useAuth:", { user: user?.nickname, isLoading, error: error?.message, isAuthenticated });
 
   return {
     user,
@@ -69,10 +70,7 @@ export function useLogin() {
       const result = await response.json();
       console.log("Login success:", result);
       
-      // Store the token
-      if (result.token) {
-        setToken(result.token);
-      }
+      // Session-based auth, no token needed
       
       return result;
     },
@@ -124,10 +122,7 @@ export function useRegister() {
       const result = await response.json();
       console.log("Register success:", result);
       
-      // Store the token
-      if (result.token) {
-        setToken(result.token);
-      }
+      // Session-based auth, no token needed
       
       return result;
     },
@@ -144,9 +139,17 @@ export function useLogout() {
   
   return useMutation({
     mutationFn: async () => {
-      // Simply remove the token for logout
-      removeToken();
-      return { success: true };
+      // Call logout endpoint to destroy session
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+      
+      if (!response.ok) {
+        throw new Error("로그아웃에 실패했습니다.");
+      }
+      
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.clear();
