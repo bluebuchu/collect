@@ -7,6 +7,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { storage } from './storage';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import { verifyToken } from './jwt-auth';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -150,6 +151,32 @@ export class AuthService {
 }
 
 export function requireAuth(req: AuthRequest, res: Response, next: NextFunction) {
+  // First check JWT token
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      const token = authHeader.substring(7);
+      const payload = verifyToken(token);
+      
+      // Set user info from JWT
+      req.user = {
+        id: payload.userId,
+        email: payload.email,
+        nickname: payload.nickname
+      };
+      
+      // Also set session for backward compatibility
+      req.session = req.session || {};
+      req.session.userId = payload.userId;
+      
+      return next();
+    } catch (error) {
+      console.error('JWT verification failed in requireAuth:', error);
+      // Continue to session check if JWT fails
+    }
+  }
+  
+  // Fall back to session check
   if (!req.session?.userId) {
     return res.status(401).json({ message: 'Authentication required' });
   }
