@@ -9,12 +9,25 @@ export function useAuth() {
     queryKey: ["/api/auth/me"],
     queryFn: async () => {
       try {
+        const token = getToken();
+        const headers: HeadersInit = {
+          "Content-Type": "application/json",
+        };
+        
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+        
         const response = await fetch("/api/auth/me", {
           method: "GET",
           credentials: "include",
+          headers,
         });
         
         if (!response.ok) {
+          if (response.status === 401 && token) {
+            removeToken();
+          }
           throw new Error('Not authenticated');
         }
         
@@ -70,7 +83,10 @@ export function useLogin() {
       const result = await response.json();
       console.log("Login success:", result);
       
-      // Session-based auth, no token needed
+      // Store JWT token if provided
+      if (result.token) {
+        setToken(result.token);
+      }
       
       return result;
     },
@@ -139,17 +155,24 @@ export function useLogout() {
   
   return useMutation({
     mutationFn: async () => {
-      // Call logout endpoint to destroy session
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      });
+      // Remove JWT token
+      removeToken();
       
-      if (!response.ok) {
-        throw new Error("로그아웃에 실패했습니다.");
+      // Also call logout endpoint to destroy session (if any)
+      try {
+        const response = await fetch("/api/auth/logout", {
+          method: "POST",
+          credentials: "include",
+        });
+        
+        if (!response.ok) {
+          console.warn("Session logout failed, but token removed");
+        }
+      } catch (error) {
+        console.warn("Session logout failed, but token removed");
       }
       
-      return await response.json();
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.clear();

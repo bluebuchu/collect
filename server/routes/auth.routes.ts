@@ -13,6 +13,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import passport from "passport";
+import { generateToken, jwtAuthMiddleware, requireJwtAuth } from "../jwt-auth";
 
 // Configure multer for file uploads
 const multerStorage = multer.diskStorage({
@@ -101,6 +102,14 @@ router.post("/api/auth/login", async (req, res) => {
       return res.status(400).json({ error: "이메일 또는 비밀번호가 올바르지 않습니다" });
     }
     
+    // Generate JWT token
+    const token = generateToken({
+      userId: user.id,
+      email: user.email,
+      nickname: user.nickname
+    });
+    
+    // Still set session for backward compatibility
     req.session.userId = user.id;
     req.session.user = user;
     
@@ -112,6 +121,7 @@ router.post("/api/auth/login", async (req, res) => {
         profileImage: user.profileImage,
         bio: user.bio
       },
+      token,
       message: "로그인되었습니다"
     });
   } catch (error: any) {
@@ -134,14 +144,17 @@ router.post("/api/auth/logout", (req, res) => {
   });
 });
 
-// Get current user
-router.get("/api/auth/me", authMiddleware, async (req: AuthRequest, res) => {
+// Get current user - now supports both JWT and session
+router.get("/api/auth/me", jwtAuthMiddleware, authMiddleware, async (req: AuthRequest, res) => {
   try {
-    if (!req.session?.userId) {
+    // Check JWT first, then session
+    const userId = req.user?.id || req.session?.userId;
+    
+    if (!userId) {
       return res.status(401).json({ error: "인증이 필요합니다" });
     }
 
-    const user = await storage.getUserById(req.session.userId);
+    const user = await storage.getUserById(userId);
     if (!user) {
       return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
     }

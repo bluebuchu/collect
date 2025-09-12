@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import { registerRoutes } from "./routes";
 import { initializeGoogleOAuth } from "./auth";
 import { storage } from "./storage";
+import { jwtAuthMiddleware } from "./jwt-auth";
 import path from "path";
 import MemoryStore from "memorystore";
 
