@@ -1216,7 +1216,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPopularBooks(limit: number = 10): Promise<BookWithStats[]> {
-    // Get books with sentence counts
+    // Get books with sentence counts, joining with books table for cover
     const result = await db
       .select({
         bookTitle: sentences.bookTitle,
@@ -1224,20 +1224,23 @@ export class DatabaseStorage implements IStorage {
         publisher: sentences.publisher,
         sentenceCount: sql<number>`count(*)`,
         totalLikes: sql<number>`sum(${sentences.likes})`,
+        cover: books.cover,
+        isbn: books.isbn,
       })
       .from(sentences)
+      .leftJoin(books, eq(sentences.bookTitle, books.title))
       .where(sentences.bookTitle !== null)
-      .groupBy(sentences.bookTitle, sentences.author, sentences.publisher)
+      .groupBy(sentences.bookTitle, sentences.author, sentences.publisher, books.cover, books.isbn)
       .orderBy(desc(sql`count(*)`))
       .limit(limit);
 
     return result.map(book => ({
       id: 0,
-      isbn: null,
+      isbn: book.isbn,
       title: book.bookTitle!,
       author: book.author,
       publisher: book.publisher,
-      cover: null,
+      cover: book.cover || null,
       searchCount: 0,
       sentenceCount: book.sentenceCount,
       createdAt: new Date(),
