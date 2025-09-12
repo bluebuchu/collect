@@ -4,8 +4,8 @@ const path = require('path');
 // Set NODE_ENV for production
 process.env.NODE_ENV = 'production';
 
-// Import the built server
-const app = require('../dist/index.js');
+// Import the production server build (without Vite)
+const app = require('../dist/index.prod.js');
 
 // Export for Vercel
 module.exports = app;
