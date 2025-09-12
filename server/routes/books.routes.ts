@@ -111,6 +111,25 @@ router.get("/api/books/popular", async (req, res) => {
   }
 });
 
+// Get my books (books from user's sentences)
+router.get("/api/books/my-books", async (req: any, res) => {
+  try {
+    // Get userId from JWT or session
+    const userId = req.user?.id || req.session?.userId;
+    if (!userId) {
+      return res.json([]); // Return empty array if not authenticated
+    }
+    
+    const storage = getStorage();
+    const limit = parseInt(req.query.limit as string) || 10;
+    const books = await storage.getUserBooks(userId, limit);
+    res.json(books);
+  } catch (error) {
+    console.error("My books error:", error);
+    res.status(500).json({ error: "내 책 목록을 가져오는 중 오류가 발생했습니다" });
+  }
+});
+
 // Get recent books
 router.get("/api/books/recent", async (req, res) => {
   try {

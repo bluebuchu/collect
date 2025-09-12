@@ -269,7 +269,12 @@ router.post("/api/sentences", requireAuth, async (req: AuthRequest, res) => {
   try {
     console.log("POST /api/sentences - Request body:", req.body);
     const validatedData = insertSentenceSchema.parse(req.body);
-    const userId = req.session!.userId!;
+    
+    // Get userId from JWT or session
+    const userId = req.user?.id || req.session?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "인증이 필요합니다" });
+    }
     
     // Extract communityId if provided
     const { communityId, ...sentenceData } = validatedData;

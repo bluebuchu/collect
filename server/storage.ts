@@ -1215,6 +1215,44 @@ export class DatabaseStorage implements IStorage {
     return newBook;
   }
 
+  async getUserBooks(userId: number, limit: number = 10): Promise<BookWithStats[]> {
+    // Get books from user's sentences
+    const result = await db
+      .select({
+        bookTitle: sentences.bookTitle,
+        author: sentences.author,
+        publisher: sentences.publisher,
+        sentenceCount: sql<number>`count(*)`,
+        totalLikes: sql<number>`sum(${sentences.likes})`,
+        cover: books.cover,
+        isbn: books.isbn,
+      })
+      .from(sentences)
+      .leftJoin(books, eq(sentences.bookTitle, books.title))
+      .where(and(
+        eq(sentences.userId, userId),
+        sentences.bookTitle !== null
+      ))
+      .groupBy(sentences.bookTitle, sentences.author, sentences.publisher, books.cover, books.isbn)
+      .orderBy(desc(sql`count(*)`))
+      .limit(limit);
+
+    return result.map(book => ({
+      id: 0,
+      isbn: book.isbn,
+      title: book.bookTitle!,
+      author: book.author,
+      publisher: book.publisher,
+      cover: book.cover || null,
+      searchCount: 0,
+      sentenceCount: book.sentenceCount,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      totalSentences: book.sentenceCount,
+      totalLikes: book.totalLikes || 0,
+    }));
+  }
+
   async getPopularBooks(limit: number = 10): Promise<BookWithStats[]> {
     // Get books with sentence counts, joining with books table for cover
     const result = await db

@@ -24,6 +24,7 @@ interface Book {
 interface BookCoverCarouselProps {
   onBookSelect?: (bookTitle: string) => void;
   className?: string;
+  mode?: 'popular' | 'my-books'; // Add mode prop
 }
 
 // 책 장르별 색상 테마
@@ -44,16 +45,18 @@ const getBookTheme = (title: string): string => {
   return themes[Math.abs(hash) % themes.length];
 };
 
-export default function BookCoverCarousel({ onBookSelect, className }: BookCoverCarouselProps) {
+export default function BookCoverCarousel({ onBookSelect, className, mode = 'my-books' }: BookCoverCarouselProps) {
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
   const [count, setCount] = useState(0);
 
-  // Fetch popular books with top sentences
+  // Fetch books based on mode
+  const endpoint = mode === 'popular' ? '/api/books/popular' : '/api/books/my-books';
+  
   const { data: books, isLoading } = useQuery<Book[]>({
-    queryKey: ["/api/books/popular-with-sentences"],
+    queryKey: [endpoint],
     queryFn: async () => {
-      const response = await fetch("/api/books/popular?limit=10", { 
+      const response = await fetch(`${endpoint}?limit=10`, { 
         credentials: "include" 
       });
       if (!response.ok) throw new Error("Failed to fetch books");
@@ -134,7 +137,7 @@ export default function BookCoverCarousel({ onBookSelect, className }: BookCover
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <BookOpen className="h-5 w-5" />
-          내가 읽고 있는 책들
+          {mode === 'popular' ? '인기 책들' : '내가 읽고 있는 책들'}
         </h3>
         {count > 1 && (
           <div className="flex items-center gap-1">
