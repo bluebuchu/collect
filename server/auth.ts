@@ -23,7 +23,18 @@ export interface AuthRequest extends Request {
 export function initializeGoogleOAuth() {
   const googleClientId = process.env.GOOGLE_CLIENT_ID;
   const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const googleRedirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5000/api/auth/google/callback';
+  
+  // Dynamically set redirect URI based on environment
+  let googleRedirectUri = process.env.GOOGLE_REDIRECT_URI;
+  if (!googleRedirectUri) {
+    if (process.env.VERCEL_URL) {
+      googleRedirectUri = `https://${process.env.VERCEL_URL}/api/auth/google/callback`;
+    } else if (process.env.NODE_ENV === 'production') {
+      googleRedirectUri = 'https://collect-topaz.vercel.app/api/auth/google/callback';
+    } else {
+      googleRedirectUri = 'http://localhost:5000/api/auth/google/callback';
+    }
+  }
 
   if (!googleClientId || !googleClientSecret) {
     console.log('Google OAuth not configured. Skipping Google authentication setup.');

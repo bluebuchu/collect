@@ -110,11 +110,11 @@ export function useRegister() {
     }) => {
       console.log("Attempting register for:", userData.email);
       
-      // Map nickname to username for the API
+      // Send nickname field to match server schema
       const registerData = {
         email: userData.email,
         password: userData.password,
-        username: userData.nickname,
+        nickname: userData.nickname,
       };
       
       const response = await fetch("/api/auth/register", {
