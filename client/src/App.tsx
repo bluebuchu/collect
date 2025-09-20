@@ -11,6 +11,7 @@ import CommunitiesHub from "@/pages/communities-hub";
 import CommunityDetail from "@/pages/community-detail";
 import BooksPage from "@/pages/books";
 import BookDetailPage from "@/pages/book-detail";
+import AdminPage from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 import { useAuth } from "@/hooks/useAuth";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
@@ -42,6 +43,7 @@ function Router() {
           <Route path="/community/:id" component={CommunityDetail} />
           <Route path="/books" component={BooksPage} />
           <Route path="/books/:bookTitle" component={BookDetailPage} />
+          <Route path="/admin" component={AdminPage} />
         </>
       ) : (
         <>
@@ -52,6 +54,7 @@ function Router() {
           <Route path="/community/:id" component={CommunityDetail} />
           <Route path="/books" component={BooksPage} />
           <Route path="/books/:bookTitle" component={BookDetailPage} />
+          <Route path="/admin" component={AdminPage} />
         </>
       )}
       <Route component={NotFound} />

@@ -22,7 +22,6 @@ import {
 import { db } from "./db";
 import { eq, like, or, desc, sql, and } from "drizzle-orm";
 import { AuthService } from "./auth";
-import { MockStorage } from "./mock-storage";
 
 export interface IStorage {
   // User operations
@@ -1370,20 +1369,13 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Use MockStorage only when explicitly requested or when no database URL is available
-const useMockStorage = process.env.USE_MOCK_STORAGE === 'true' || (!process.env.SUPABASE_DATABASE_URL && !process.env.DATABASE_URL);
-
 // Create singleton instance
 let storageInstance: IStorage | null = null;
 
 export function getStorage(): IStorage {
   if (!storageInstance) {
-    console.log("Creating storage instance...");
-    storageInstance = useMockStorage ? new MockStorage() : new DatabaseStorage();
-    if (useMockStorage) {
-      console.log("📦 Using Mock Storage (in-memory database)");
-      console.log("📝 Demo account: demo@example.com / demo123");
-    }
+    console.log("Creating database storage instance...");
+    storageInstance = new DatabaseStorage();
   }
   return storageInstance;
 }

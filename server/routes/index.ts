@@ -5,6 +5,7 @@ import userRoutes from "./user.routes";
 import booksRoutes from "./books.routes";
 import communitiesRoutes from "./communities.routes";
 import exportRoutes from "./export.routes";
+import adminRoutes from "./admin.routes";
 import { authMiddleware } from "../auth";
 
 export function registerRoutes(app: Express) {
@@ -18,6 +19,7 @@ export function registerRoutes(app: Express) {
   app.use(booksRoutes);
   app.use(communitiesRoutes);
   app.use("/api", exportRoutes);
+  app.use(adminRoutes);
   
   // Health check
   app.get("/api/health", (req, res) => {
