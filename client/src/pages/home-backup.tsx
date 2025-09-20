@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -28,6 +29,7 @@ import type { SentenceWithUser } from "@shared/schema";
 
 export default function Home() {
   const { user, isLoading, isAuthenticated } = useAuth();
+  const [, setLocation] = useLocation();
   const { user: googleUser, isAuthenticated: isGoogleAuthenticated } = useGoogleAuth();
   const logoutMutation = useLogout();
   
@@ -51,7 +53,7 @@ export default function Home() {
         <div className="text-center">
           <p className="text-gray-600">사용자 정보를 확인할 수 없습니다.</p>
           <button 
-            onClick={() => window.location.href = "/"}
+            onClick={() => setLocation("/")}
             className="mt-4 px-4 py-2 bg-black text-white rounded"
           >
             로그인 페이지로 이동

@@ -422,7 +422,7 @@ export default function CommunitiesHub() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <Button
-                onClick={() => window.location.href = "/"}
+                onClick={() => setLocation("/")}
                 variant="outline"
                 size="sm"
                 className="gap-2"

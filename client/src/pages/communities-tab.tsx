@@ -346,7 +346,7 @@ export default function CommunitiesTab() {
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <Button
-                  onClick={() => window.location.href = "/"}
+                  onClick={() => setLocation("/")}
                   variant="outline"
                   size="sm"
                   className="gap-2"
@@ -355,7 +355,7 @@ export default function CommunitiesTab() {
                   홈으로
                 </Button>
                 <Button
-                  onClick={() => window.location.href = "/community"}
+                  onClick={() => setLocation("/community")}
                   variant="outline"
                   size="sm"
                   className="gap-2"

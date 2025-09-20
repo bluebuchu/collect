@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -24,6 +25,7 @@ import type { SentenceWithUser } from "@shared/schema";
 export default function HomeNew() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const logoutMutation = useLogout();
+  const [, setLocation] = useLocation();
   
   const [isExpanded, setIsExpanded] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -64,7 +66,7 @@ export default function HomeNew() {
       <div className="min-h-screen flex items-center justify-center">
         <Card className="p-6">
           <p className="text-muted-foreground">로그인이 필요합니다</p>
-          <Button onClick={() => window.location.href = "/"} className="mt-4">
+          <Button onClick={() => setLocation("/")} className="mt-4">
             로그인 페이지로
           </Button>
         </Card>

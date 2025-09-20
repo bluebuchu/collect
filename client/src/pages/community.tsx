@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -48,6 +49,7 @@ export default function Community() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   
   // Search and filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -149,7 +151,7 @@ export default function Community() {
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <Button
-                  onClick={() => window.location.href = "/"}
+                  onClick={() => setLocation("/")}
                   variant="outline"
                   size="sm"
                   className="gap-2"
@@ -158,7 +160,7 @@ export default function Community() {
                   홈으로
                 </Button>
                 <Button
-                  onClick={() => window.location.href = "/communities"}
+                  onClick={() => setLocation("/communities")}
                   variant="outline"
                   size="sm"
                   className="gap-2"

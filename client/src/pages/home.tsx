@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Plus, ChevronLeft, ChevronRight, LogOut, BookOpen, Heart, Calendar, Users } from "lucide-react";
@@ -30,6 +31,7 @@ export default function Home() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const { user: googleUser, isAuthenticated: isGoogleAuthenticated } = useGoogleAuth();
   const logoutMutation = useLogout();
+  const [, setLocation] = useLocation();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -139,7 +141,7 @@ export default function Home() {
         <div className="text-center">
           <p className="text-gray-600 mb-4">로그인이 필요합니다</p>
           <button 
-            onClick={() => window.location.href = "/"}
+            onClick={() => setLocation("/")}
             className="px-4 py-2 bg-black text-white rounded"
           >
             로그인 페이지로
@@ -158,7 +160,7 @@ export default function Home() {
             <h1 className="text-2xl font-bold font-display tracking-wide">문장수집가</h1>
             <div className="flex items-center gap-2">
               <Button
-                onClick={() => window.location.href = "/communities"}
+                onClick={() => setLocation("/communities")}
                 variant="ghost"
                 size="sm"
                 className="text-xs"
