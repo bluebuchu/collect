@@ -395,6 +395,10 @@ router.post("/api/sentences/:id/like", requireAuth, async (req: AuthRequest, res
     const id = parseInt(req.params.id);
     const userId = req.session!.userId!;
     
+    if (isNaN(id) || id <= 0) {
+      return res.status(400).json({ error: "올바르지 않은 문장 ID입니다" });
+    }
+    
     const sentence = await storage.getSentence(id);
     if (!sentence) {
       return res.status(404).json({ error: "문장을 찾을 수 없습니다" });
@@ -405,7 +409,8 @@ router.post("/api/sentences/:id/like", requireAuth, async (req: AuthRequest, res
     
     res.json({ 
       isLiked,
-      likes: updatedSentence?.likes || 0
+      likes: updatedSentence?.likes || 0,
+      message: isLiked ? "좋아요를 눌렀습니다" : "좋아요를 취소했습니다"
     });
   } catch (error) {
     console.error("Error toggling like:", error);

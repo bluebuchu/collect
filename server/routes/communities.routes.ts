@@ -129,6 +129,15 @@ router.post("/api/communities", requireAuth, async (req: AuthRequest, res) => {
     const validatedData = createCommunitySchema.parse(req.body);
     const userId = req.session!.userId!;
     
+    // Check for duplicate community name
+    console.log(`Checking for duplicate community name: ${validatedData.name}`);
+    const existingCommunity = await storage.getCommunityByName(validatedData.name);
+    console.log(`Existing community found:`, existingCommunity);
+    if (existingCommunity) {
+      console.log(`Duplicate community name detected: ${validatedData.name}`);
+      return res.status(400).json({ error: "이미 사용 중인 커뮤니티 이름입니다" });
+    }
+    
     console.log(`Creating community for user ${userId}:`, validatedData);
     
     const newCommunity = await storage.createCommunity({

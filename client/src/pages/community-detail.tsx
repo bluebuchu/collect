@@ -32,6 +32,34 @@ export default function CommunityDetailPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [sentenceSort, setSentenceSort] = useState("latest");
+  const [likedSentences, setLikedSentences] = useState<Set<number>>(new Set());
+  
+  // Fetch user's liked sentences
+  useEffect(() => {
+    if (user) {
+      console.log("Fetching liked sentences for user:", user.id);
+      // Fetch liked sentences from API
+      fetch("/api/user/liked-sentences", {
+        credentials: "include",
+      })
+        .then((res) => {
+          if (!res.ok) {
+            console.log("Failed to fetch liked sentences");
+            return [];
+          }
+          return res.json();
+        })
+        .then((data) => {
+          console.log("Liked sentences data:", data);
+          if (Array.isArray(data)) {
+            setLikedSentences(new Set(data));
+          }
+        })
+        .catch((err) => {
+          console.log("Error fetching liked sentences:", err);
+        });
+    }
+  }, [user?.id]);
 
   // Fetch community details
   const { data: community, isLoading: isLoadingCommunity } = useQuery<CommunityWithStats>({
@@ -92,6 +120,55 @@ export default function CommunityDetailPage() {
       toast({
         title: "오류",
         description: error.message || "커뮤니티 가입 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Like/Unlike sentence mutation
+  const likeMutation = useMutation({
+    mutationFn: async (sentenceId: number) => {
+      console.log(`Liking sentence ${sentenceId}`);
+      const response = await fetch(`/api/sentences/${sentenceId}/like`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        console.error("Like error:", error);
+        throw new Error("좋아요 처리 중 오류가 발생했습니다");
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data, sentenceId) => {
+      // Update local state
+      setLikedSentences(prev => {
+        const newSet = new Set(prev);
+        if (data.isLiked) {
+          newSet.add(sentenceId);
+        } else {
+          newSet.delete(sentenceId);
+        }
+        return newSet;
+      });
+      
+      // Invalidate query to refresh data
+      queryClient.invalidateQueries({ queryKey: [`/api/communities/${id}/sentences`] });
+      
+      toast({
+        title: data.isLiked ? "좋아요" : "좋아요 취소",
+        description: data.message || (data.isLiked ? "문장을 좋아합니다." : "좋아요를 취소했습니다."),
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "오류",
+        description: error.message || "좋아요 처리 중 오류가 발생했습니다.",
         variant: "destructive",
       });
     },
@@ -328,10 +405,35 @@ export default function CommunityDetailPage() {
                           )}
                         </div>
                         <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-1">
-                            <Heart className="h-4 w-4 text-gray-400" />
-                            <span>{sentence.likes}</span>
-                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              console.log("Like button clicked for sentence:", sentence.id);
+                              if (!user) {
+                                toast({
+                                  title: "로그인 필요",
+                                  description: "좋아요를 누르려면 로그인이 필요합니다.",
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
+                              likeMutation.mutate(sentence.id);
+                            }}
+                            disabled={likeMutation.isPending}
+                            className="h-8 px-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          >
+                            <Heart 
+                              className={`h-4 w-4 mr-1 transition-colors ${
+                                likedSentences.has(sentence.id) 
+                                  ? "fill-red-500 text-red-500" 
+                                  : "text-gray-400 hover:text-gray-600"
+                              }`} 
+                            />
+                            <span className="text-sm">{sentence.likes || 0}</span>
+                          </Button>
                           <div className="flex items-center gap-2">
                             <Avatar className="h-6 w-6">
                               <AvatarImage src={sentence.user?.profileImage || undefined} />

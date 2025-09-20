@@ -112,8 +112,13 @@ export const communitySentences = pgTable("community_sentences", {
 // User schemas
 export const registerUserSchema = z.object({
   email: z.string().email("올바른 이메일 주소를 입력해주세요"),
-  password: z.string().min(6, "비밀번호는 최소 6자 이상이어야 합니다"),
-  nickname: z.string().min(2, "닉네임은 최소 2자 이상이어야 합니다").max(50, "닉네임은 50자 이하여야 합니다"),
+  password: z.string()
+    .min(8, "비밀번호는 최소 8자 이상이어야 합니다")
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "비밀번호는 대소문자와 숫자를 포함해야 합니다"),
+  nickname: z.string()
+    .min(2, "닉네임은 최소 2자 이상이어야 합니다")
+    .max(50, "닉네임은 50자 이하여야 합니다")
+    .regex(/^[a-zA-Z0-9가-힣_]+$/, "닉네임은 한글, 영문, 숫자, 밑줄만 사용 가능합니다"),
   bio: z.string().max(200, "소개는 200자 이하여야 합니다").optional(),
 });
 
@@ -123,7 +128,11 @@ export const loginUserSchema = z.object({
 });
 
 export const updateUserSchema = z.object({
-  nickname: z.string().min(2, "닉네임은 최소 2자 이상이어야 합니다").max(50, "닉네임은 50자 이하여야 합니다").optional(),
+  nickname: z.string()
+    .min(2, "닉네임은 최소 2자 이상이어야 합니다")
+    .max(50, "닉네임은 50자 이하여야 합니다")
+    .regex(/^[a-zA-Z0-9가-힣_]+$/, "닉네임은 한글, 영문, 숫자, 밑줄만 사용 가능합니다")
+    .optional(),
   bio: z.string().max(200, "소개는 200자 이하여야 합니다").optional(),
   profileImage: z.string().optional(),
 });
@@ -136,8 +145,18 @@ export const insertSentenceSchema = createInsertSchema(sentences).omit({
   createdAt: true,
   updatedAt: true,
 }).extend({
+  content: z.string()
+    .min(10, "문장은 최소 10자 이상이어야 합니다")
+    .max(500, "문장은 500자 이하여야 합니다")
+    .trim(),
+  bookTitle: z.string().max(255, "책 제목은 255자 이하여야 합니다").optional(),
+  author: z.string().max(255, "저자명은 255자 이하여야 합니다").optional(),
+  publisher: z.string().max(255, "출판사명은 255자 이하여야 합니다").optional(),
+  pageNumber: z.number().min(1).max(9999).optional(),
   isPublic: z.number().min(0).max(1).optional().default(0),
   communityId: z.number().optional(), // For linking to a specific community
+  privateNote: z.string().max(1000, "개인 메모는 1000자 이하여야 합니다").optional(),
+  isBookmarked: z.number().min(0).max(1).optional().default(0),
 });
 
 export const updateSentenceSchema = createInsertSchema(sentences).omit({
@@ -147,7 +166,18 @@ export const updateSentenceSchema = createInsertSchema(sentences).omit({
   createdAt: true,
   updatedAt: true,
 }).extend({
+  content: z.string()
+    .min(10, "문장은 최소 10자 이상이어야 합니다")
+    .max(500, "문장은 500자 이하여야 합니다")
+    .trim()
+    .optional(),
+  bookTitle: z.string().max(255, "책 제목은 255자 이하여야 합니다").optional(),
+  author: z.string().max(255, "저자명은 255자 이하여야 합니다").optional(),
+  publisher: z.string().max(255, "출판사명은 255자 이하여야 합니다").optional(),
+  pageNumber: z.number().min(1).max(9999).optional(),
   isPublic: z.number().min(0).max(1).optional(),
+  privateNote: z.string().max(1000, "개인 메모는 1000자 이하여야 합니다").optional(),
+  isBookmarked: z.number().min(0).max(1).optional(),
 });
 
 export const searchSchema = z.object({
@@ -160,7 +190,9 @@ export const passwordResetRequestSchema = z.object({
 
 export const passwordResetSchema = z.object({
   token: z.string().min(1, "재설정 토큰이 필요합니다"),
-  newPassword: z.string().min(6, "비밀번호는 최소 6자 이상이어야 합니다"),
+  newPassword: z.string()
+    .min(8, "비밀번호는 최소 8자 이상이어야 합니다")
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "비밀번호는 대소문자와 숫자를 포함해야 합니다"),
 });
 
 export const findEmailSchema = z.object({

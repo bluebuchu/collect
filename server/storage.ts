@@ -27,7 +27,7 @@ export interface IStorage {
   // User operations
   getUserById(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  getUserByNickname(nickname: string): Promise<User | null>;
+  getUserByNickname(nickname: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: UpdateUser): Promise<User | undefined>;
   
@@ -54,6 +54,7 @@ export interface IStorage {
   getAllCommunitiesEnhanced(options: { sort: string; search: string; includeTopSentences: boolean; offset: number; limit: number; userId?: number }): Promise<CommunityWithStats[]>;
   getUserCommunities(userId: number): Promise<any[]>;
   getCommunity(id: number, userId?: number): Promise<any>;
+  getCommunityByName(name: string): Promise<any | undefined>;
   createCommunity(data: any): Promise<any>;
   updateCommunity(id: number, data: any): Promise<any>;
   deleteCommunity(id: number): Promise<boolean>;
@@ -1007,9 +1008,69 @@ export class DatabaseStorage implements IStorage {
     return [];
   }
 
+  async getCommunityByName(name: string): Promise<any | undefined> {
+    const [community] = await db
+      .select()
+      .from(communities)
+      .where(eq(communities.name, name));
+    return community || undefined;
+  }
+
   async getCommunity(id: number, userId?: number): Promise<any> {
-    // Placeholder implementation
-    return null;
+    const [community] = await db
+      .select({
+        id: communities.id,
+        name: communities.name,
+        description: communities.description,
+        coverImage: communities.coverImage,
+        category: communities.category,
+        relatedBook: communities.relatedBook,
+        creatorId: communities.creatorId,
+        memberCount: communities.memberCount,
+        isPublic: communities.isPublic,
+        lastActivityAt: communities.lastActivityAt,
+        sentenceCount: communities.sentenceCount,
+        totalLikes: communities.totalLikes,
+        totalComments: communities.totalComments,
+        activityScore: communities.activityScore,
+        createdAt: communities.createdAt,
+        updatedAt: communities.updatedAt,
+        creatorNickname: users.nickname,
+        creatorProfileImage: users.profileImage,
+      })
+      .from(communities)
+      .leftJoin(users, eq(communities.creatorId, users.id))
+      .where(eq(communities.id, id));
+
+    if (!community) {
+      return null;
+    }
+
+    // Check if user is a member
+    let isMember = false;
+    let memberRole = null;
+    if (userId) {
+      const [membership] = await db
+        .select()
+        .from(communityMembers)
+        .where(
+          and(
+            eq(communityMembers.communityId, id),
+            eq(communityMembers.userId, userId)
+          )
+        );
+      
+      if (membership) {
+        isMember = true;
+        memberRole = membership.role;
+      }
+    }
+
+    return {
+      ...community,
+      isMember,
+      memberRole,
+    };
   }
 
   async createCommunity(data: any): Promise<any> {

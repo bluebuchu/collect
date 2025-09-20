@@ -176,6 +176,22 @@ export default function Home() {
               >
                 내보내기
               </Button>
+              <Button
+                onClick={() => setIsProfileModalOpen(true)}
+                variant="ghost"
+                size="sm"
+                className="text-xs"
+                title="프로필 수정"
+              >
+                <div className="flex items-center gap-1">
+                  <div className="w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-xs font-bold">
+                    {(user?.nickname || googleUser?.nickname || "U")[0].toUpperCase()}
+                  </div>
+                  <span className="hidden sm:inline max-w-[100px] truncate">
+                    {user?.nickname || googleUser?.nickname || "사용자"}
+                  </span>
+                </div>
+              </Button>
               <ThemeToggle />
               <Button
                 onClick={() => logoutMutation.mutate()}

@@ -7,6 +7,8 @@ const router = Router();
 
 // Admin password check middleware
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
+console.log("Admin password loaded:", process.env.ADMIN_PASSWORD ? "From ENV" : "Using default (admin123)");
+console.log("Actual password:", ADMIN_PASSWORD);
 const adminTokens = new Map<string, number>(); // token -> timestamp
 
 // Verify admin auth
@@ -39,6 +41,10 @@ function verifyAdminAuth(req: any, res: any, next: any) {
 router.post("/api/admin/auth", async (req, res) => {
   try {
     const { password } = req.body;
+    
+    console.log("Login attempt with password:", password);
+    console.log("Expected password:", ADMIN_PASSWORD);
+    console.log("Password match:", password === ADMIN_PASSWORD);
     
     if (password !== ADMIN_PASSWORD) {
       return res.status(401).json({ error: "Invalid password" });

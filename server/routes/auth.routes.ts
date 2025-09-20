@@ -52,10 +52,17 @@ const router = Router();
 router.post("/api/auth/register", async (req, res) => {
   try {
     const validatedData = registerUserSchema.parse(req.body);
-    const existingUser = await storage.getUserByEmail(validatedData.email);
     
+    // Check for duplicate email
+    const existingUser = await storage.getUserByEmail(validatedData.email);
     if (existingUser) {
       return res.status(400).json({ error: "이미 사용 중인 이메일입니다" });
+    }
+    
+    // Check for duplicate nickname
+    const existingNickname = await storage.getUserByNickname(validatedData.nickname);
+    if (existingNickname) {
+      return res.status(400).json({ error: "이미 사용 중인 닉네임입니다" });
     }
     
     const hashedPassword = await AuthService.hashPassword(validatedData.password);
@@ -64,13 +71,14 @@ router.post("/api/auth/register", async (req, res) => {
       password: hashedPassword,
     });
     
-    // Generate JWT token for new user
+    // Generate JWT token for auto-login
     const token = generateToken({
       userId: newUser.id,
       email: newUser.email,
       nickname: newUser.nickname
     });
     
+    // Set session for auto-login
     req.session.userId = newUser.id;
     req.session.user = newUser;
     
@@ -83,7 +91,8 @@ router.post("/api/auth/register", async (req, res) => {
         bio: newUser.bio
       },
       token,
-      message: "회원가입이 완료되었습니다"
+      autoLogin: true,
+      message: "회원가입이 완료되었습니다. 자동으로 로그인됩니다."
     });
   } catch (error: any) {
     console.error("Registration error:", error);
@@ -187,6 +196,17 @@ router.put("/api/auth/profile", requireAuth, upload.single('profileImage'), asyn
   try {
     const userId = req.session!.userId!;
     const validatedData = updateUserSchema.parse(req.body);
+    
+    // Check for duplicate nickname if changing nickname
+    if (validatedData.nickname) {
+      const currentUser = await storage.getUserById(userId);
+      if (currentUser && currentUser.nickname !== validatedData.nickname) {
+        const existingNickname = await storage.getUserByNickname(validatedData.nickname);
+        if (existingNickname) {
+          return res.status(400).json({ error: "이미 사용 중인 닉네임입니다" });
+        }
+      }
+    }
     
     if (req.file) {
       validatedData.profileImage = `/uploads/profiles/${req.file.filename}`;
