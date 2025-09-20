@@ -3,8 +3,22 @@ import { getAuthHeaders } from "./auth";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    let errorMessage = res.statusText;
+    const contentType = res.headers.get('content-type');
+    
+    try {
+      if (contentType?.includes('application/json')) {
+        const errorData = await res.json();
+        errorMessage = errorData.error || errorData.message || errorMessage;
+      } else {
+        const text = await res.text();
+        if (text) errorMessage = text;
+      }
+    } catch (e) {
+      console.error('Error parsing response:', e);
+    }
+    
+    throw new Error(`${res.status}: ${errorMessage}`);
   }
 }
 
@@ -52,7 +66,24 @@ export async function apiRequest(
   });
 
   await throwIfResNotOk(res);
-  return res.json();
+  
+  // Check if response has content
+  const contentType = res.headers.get('content-type');
+  const contentLength = res.headers.get('content-length');
+  
+  // If no content or empty response
+  if (contentLength === '0' || res.status === 204) {
+    return { success: true };
+  }
+  
+  // Parse JSON response
+  if (contentType?.includes('application/json')) {
+    return res.json();
+  }
+  
+  // For non-JSON responses, return as text
+  const text = await res.text();
+  return { success: true, message: text || 'Operation completed successfully' };
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -74,7 +105,24 @@ export const getQueryFn: <T>(options: {
     }
 
     await throwIfResNotOk(res);
-    return await res.json();
+    
+    // Check content type for proper parsing
+    const contentType = res.headers.get('content-type');
+    const contentLength = res.headers.get('content-length');
+    
+    // If no content or empty response
+    if (contentLength === '0' || res.status === 204) {
+      return null;
+    }
+    
+    // Parse JSON response
+    if (contentType?.includes('application/json')) {
+      return await res.json();
+    }
+    
+    // For non-JSON responses, try to return as text
+    const text = await res.text();
+    return text || null;
   };
 
 export const queryClient = new QueryClient({

@@ -55,12 +55,16 @@ export default function EditSentenceModal({ sentence, open, onClose }: EditSente
       console.log("Update success:", result);
       return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Sentence updated successfully:', data);
       toast({
         title: "수정 완료",
         description: "문장이 성공적으로 수정되었습니다.",
       });
+      // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["/api/sentences"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/sentences/my"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/sentences/community"] });
       onClose();
       clearForm();
     },

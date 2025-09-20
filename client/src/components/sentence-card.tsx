@@ -48,9 +48,13 @@ export default function SentenceCard({ sentence, onDelete, onEdit, onAdminDelete
       }
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Like added successfully:', data);
       setIsLiked(true);
+      // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["/api/sentences"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/sentences/my"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/sentences/community"] });
       setTimeout(() => setIsLiked(false), 500);
       toast({
         title: "공감합니다",

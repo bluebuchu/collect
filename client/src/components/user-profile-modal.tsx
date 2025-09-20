@@ -59,14 +59,20 @@ export default function UserProfileModal({ open, onClose }: UserProfileModalProp
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Profile image uploaded successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
       queryClient.invalidateQueries({ queryKey: ['/api/user/stats'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/sentences'] });
       toast({
         title: "성공",
         description: "프로필 이미지가 업로드되었습니다.",
       });
       setImagePreview(null);
+      // Force refresh if needed
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     },
     onError: (error: Error) => {
       toast({

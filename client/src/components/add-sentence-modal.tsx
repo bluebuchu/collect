@@ -74,22 +74,26 @@ export default function AddSentenceModal({ open, onClose }: AddSentenceModalProp
     mutationFn: async (data: { content: string; bookTitle?: string; author?: string; publisher?: string; pageNumber?: number; isPublic?: number; communityId?: number }) => {
       return apiRequest("POST", "/api/sentences", data);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Sentence added successfully:', data);
       toast({
         title: "등록 완료",
         description: "문장이 성공적으로 등록되었습니다!",
       });
+      // Invalidate all related queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["/api/sentences"] });
       queryClient.invalidateQueries({ queryKey: ["/api/sentences/my"] });
       queryClient.invalidateQueries({ queryKey: ["/api/sentences/community"] });
       queryClient.invalidateQueries({ queryKey: ["/api/sentences/community/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/books"] });
       resetForm();
       onClose();
     },
-    onError: () => {
+    onError: (error: Error) => {
+      console.error('Failed to add sentence:', error);
       toast({
         title: "등록 실패",
-        description: "문장 등록에 실패했습니다.",
+        description: error.message || "문장 등록에 실패했습니다. 다시 시도해주세요.",
         variant: "destructive",
       });
     },

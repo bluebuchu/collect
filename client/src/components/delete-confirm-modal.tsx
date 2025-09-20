@@ -17,21 +17,25 @@ export default function DeleteConfirmModal({ open, onClose, sentenceId }: Delete
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await apiRequest("DELETE", `/api/sentences/${id}`);
-      return response.json();
+      return await apiRequest("DELETE", `/api/sentences/${id}`);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Sentence deleted successfully:', data);
       toast({
         title: "삭제 완료",
-        description: "문장이 삭제되었습니다.",
+        description: "문장이 성공적으로 삭제되었습니다.",
       });
+      // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["/api/sentences"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/sentences/my"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/sentences/community"] });
       onClose();
     },
-    onError: () => {
+    onError: (error: Error) => {
+      console.error('Failed to delete sentence:', error);
       toast({
         title: "삭제 실패",
-        description: "문장을 삭제할 권한이 없습니다.",
+        description: error.message || "문장을 삭제할 권한이 없거나 요청에 실패했습니다.",
         variant: "destructive",
       });
     },
