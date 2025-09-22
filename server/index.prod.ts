@@ -6,6 +6,7 @@ import { registerRoutes } from "./routes";
 import { initializeGoogleOAuth } from "./auth";
 import { storage } from "./storage";
 import { jwtAuthMiddleware } from "./jwt-auth";
+import { emailService } from "./email";
 import path from "path";
 import MemoryStore from "memorystore";
 
@@ -68,6 +69,9 @@ app.use(session(sessionConfig));
 // Initialize Passport
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Initialize Email Service
+emailService.initialize();
 
 // Initialize Google OAuth
 initializeGoogleOAuth();

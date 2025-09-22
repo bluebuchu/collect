@@ -9,6 +9,7 @@ import {
 } from "@shared/schema";
 import { AuthService, authMiddleware, requireAuth, type AuthRequest } from "../auth";
 import { storage } from "../storage";
+import { emailService } from "../email";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -242,14 +243,28 @@ router.post("/api/auth/password-reset/request", async (req, res) => {
     const user = await storage.getUserByEmail(validatedData.email);
     
     if (!user) {
-      return res.json({ message: "비밀번호 재설정 링크가 이메일로 전송되었습니다" });
+      // Don't reveal whether the email exists for security
+      return res.json({ message: "입력하신 이메일이 등록되어 있다면, 비밀번호 재설정 링크가 전송됩니다." });
     }
     
     const token = await storage.createPasswordResetToken(user.id);
     
-    console.log(`Password reset token for ${user.email}: ${token}`);
+    // Send email with reset link
+    const emailSent = await emailService.sendPasswordResetEmail(user.email, token, user.nickname);
     
-    res.json({ message: "비밀번호 재설정 링크가 이메일로 전송되었습니다" });
+    if (!emailSent) {
+      // If email fails, still log the token for development
+      console.log(`[Dev Mode] Password reset token for ${user.email}: ${token}`);
+      // In development, return token for testing
+      if (process.env.NODE_ENV !== "production") {
+        return res.json({ 
+          message: "비밀번호 재설정 링크가 이메일로 전송되었습니다.",
+          token // Only include token in development
+        });
+      }
+    }
+    
+    res.json({ message: "입력하신 이메일이 등록되어 있다면, 비밀번호 재설정 링크가 전송됩니다." });
   } catch (error: any) {
     console.error("Password reset request error:", error);
     res.status(500).json({ error: "비밀번호 재설정 요청 처리 중 오류가 발생했습니다" });

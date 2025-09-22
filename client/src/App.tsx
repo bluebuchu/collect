@@ -12,6 +12,7 @@ import CommunityDetail from "@/pages/community-detail";
 import BooksPage from "@/pages/books";
 import BookDetailPage from "@/pages/book-detail";
 import AdminPage from "@/pages/admin";
+import ResetPasswordPage from "@/pages/reset-password";
 import NotFound from "@/pages/not-found";
 import { useAuth } from "@/hooks/useAuth";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
@@ -35,6 +36,9 @@ function Router() {
 
   return (
     <Switch>
+      {/* Password reset page is accessible to everyone */}
+      <Route path="/reset-password" component={ResetPasswordPage} />
+      
       {!hasAnyAuth ? (
         <>
           <Route path="/" component={Landing} />

@@ -25,7 +25,7 @@ export default function ForgotPasswordModal({ open, onClose }: ForgotPasswordMod
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/auth/forgot-password", {
+      const response = await fetch("/api/auth/password-reset/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -35,7 +35,7 @@ export default function ForgotPasswordModal({ open, onClose }: ForgotPasswordMod
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message);
+        throw new Error(data.error || data.message);
       }
 
       toast({
@@ -43,7 +43,7 @@ export default function ForgotPasswordModal({ open, onClose }: ForgotPasswordMod
         description: data.message,
       });
 
-      // For testing - auto-fill token
+      // For testing in development - auto-fill token
       if (data.token) {
         setToken(data.token);
         setStep('reset');
@@ -74,7 +74,7 @@ export default function ForgotPasswordModal({ open, onClose }: ForgotPasswordMod
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/auth/reset-password", {
+      const response = await fetch("/api/auth/password-reset", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -84,7 +84,7 @@ export default function ForgotPasswordModal({ open, onClose }: ForgotPasswordMod
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message);
+        throw new Error(data.error || data.message);
       }
 
       toast({

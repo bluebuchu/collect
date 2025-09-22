@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeGoogleOAuth } from "./auth";
+import { emailService } from "./email";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -105,6 +106,9 @@ let serverInstance: any;
     }
     console.error('Express error:', err);
   });
+
+  // Initialize email service
+  emailService.initialize();
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
