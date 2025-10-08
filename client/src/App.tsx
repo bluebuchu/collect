@@ -24,10 +24,19 @@ function Router() {
   const { user: googleUser, isAuthenticated: isGoogleAuthenticated } = useGoogleAuth();
   const { isAuthenticated: isSupabaseAuthenticated, isLoading: isSupabaseLoading } = useSupabaseAuth();
 
-  console.log("Router - Auth state:", { user, isAuthenticated, isLoading, error, googleUser, isGoogleAuthenticated, isSupabaseAuthenticated });
+  console.log("Router - Auth state:", { 
+    user, 
+    isAuthenticated, 
+    isLoading, 
+    error, 
+    googleUser, 
+    isGoogleAuthenticated, 
+    isSupabaseAuthenticated,
+    isSupabaseLoading 
+  });
 
-  // 모든 인증 시스템이 로딩 중일 때만 로딩 표시
-  if (isLoading || isSupabaseLoading) {
+  // Supabase만 로딩 중이면 로딩 표시 (기존 시스템은 빠르게 실패함)
+  if (isSupabaseLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
