@@ -155,8 +155,10 @@ export function useSupabaseAuth() {
         description: "성공적으로 로그아웃되었습니다."
       })
 
-      // 홈으로 리디렉션
-      window.location.href = '/'
+      // 랜딩 페이지로 리디렉션 (로그인 페이지)
+      window.location.replace('/')
+      // 강제 새로고침으로 모든 상태 초기화
+      window.location.reload()
     } catch (error: any) {
       console.error('Sign out error:', error)
       toast({

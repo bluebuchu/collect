@@ -73,9 +73,14 @@ export function SupabaseGoogleButton({ className = '', showUserInfo = false }: S
     <div className={className}>
       <Button
         onClick={async () => {
-          setIsSigningIn(true);
-          await signInWithGoogle();
-          // Supabase가 자동으로 리디렉션 처리
+          try {
+            setIsSigningIn(true);
+            await signInWithGoogle();
+            // Supabase가 자동으로 리디렉션 처리
+          } catch (error) {
+            console.error('Google sign in error:', error);
+            setIsSigningIn(false);
+          }
         }}
         variant="outline"
         disabled={isSigningIn}
