@@ -127,9 +127,7 @@ export default function Home() {
   const bookSentences = allFilteredSentences.filter(s => s.bookTitle).length;
 
   // App.tsx에서 이미 인증 체크를 하므로 여기서는 간단한 로딩만 표시
-  if (isLoading) {
-    return null; // 또는 아무것도 표시하지 않음
-  }
+  // isLoading 체크 제거 - App.tsx에서 이미 처리됨
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

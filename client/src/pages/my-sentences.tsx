@@ -119,14 +119,8 @@ export default function MySentences() {
     return acc;
   }, {} as Record<string, SentenceWithUser[]>);
 
-  if (authLoading) {
-    return <div className="min-h-screen flex items-center justify-center">로딩 중...</div>;
-  }
-
   // App.tsx에서 라우팅 제어하므로 여기서 체크 불필요
-  if (!user) {
-    return null;
-  }
+  // authLoading과 user 체크 제거 - App.tsx에서 이미 처리됨
 
   const renderSentenceCard = (sentence: SentenceWithUser) => (
     <SentenceCard
