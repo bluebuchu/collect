@@ -13,9 +13,11 @@ import BooksPage from "@/pages/books";
 import BookDetailPage from "@/pages/book-detail";
 import AdminPage from "@/pages/admin";
 import ResetPasswordPage from "@/pages/reset-password";
+import AuthCallback from "@/pages/auth-callback";
 import NotFound from "@/pages/not-found";
 import { useAuth } from "@/hooks/useAuth";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 
 function Router() {
   const { user, isAuthenticated, isLoading, error } = useAuth();
@@ -36,6 +38,9 @@ function Router() {
 
   return (
     <Switch>
+      {/* Auth callback for OAuth */}
+      <Route path="/auth/callback" component={AuthCallback} />
+      
       {/* Password reset page is accessible to everyone */}
       <Route path="/reset-password" component={ResetPasswordPage} />
       

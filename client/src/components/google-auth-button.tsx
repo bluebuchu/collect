@@ -1,8 +1,8 @@
-import { useRef, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { GoogleOAuthSetupModal } from '@/components/google-oauth-setup-modal';
-import { LogOut, Settings } from 'lucide-react';
+import { LogOut, Settings, Loader2 } from 'lucide-react';
 
 interface GoogleAuthButtonProps {
   className?: string;
@@ -10,11 +10,19 @@ interface GoogleAuthButtonProps {
 }
 
 export function GoogleAuthButton({ className = '', showUserInfo = false }: GoogleAuthButtonProps) {
-  const { user, isInitialized, isAuthenticated, signIn, signOut, renderSignInButton } = useGoogleAuth();
-  const googleButtonRef = useRef<HTMLDivElement>(null);
+  const { user, isLoading, isAuthenticated, isGoogleOAuthEnabled, signIn, signOut, message } = useGoogleAuth();
   const [showSetupModal, setShowSetupModal] = useState(false);
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
-  // Google 자동 버튼 렌더링 비활성화 (커스텀 버튼만 사용)
+  // 로딩 상태
+  if (isLoading) {
+    return (
+      <div className={`flex items-center gap-2 ${className}`}>
+        <Loader2 className="w-4 h-4 animate-spin" />
+        <span className="text-sm text-gray-500">인증 확인 중...</span>
+      </div>
+    );
+  }
 
   if (isAuthenticated && user) {
     return (
@@ -35,24 +43,65 @@ export function GoogleAuthButton({ className = '', showUserInfo = false }: Googl
           </div>
         )}
         <Button
-          onClick={signOut}
+          onClick={handleGoogleSignOut}
           variant="outline"
           size="sm"
           className="flex items-center gap-2"
         >
           <LogOut className="w-4 h-4" />
-          Google 로그아웃
+          로그아웃
         </Button>
       </div>
     );
   }
 
-  const handleGoogleSignIn = () => {
-    // 서버의 Google OAuth 엔드포인트로 리디렉션
-    window.location.href = '/api/auth/google';
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsSigningIn(true);
+      // 서버의 Google OAuth 엔드포인트로 리디렉션
+      window.location.href = '/api/auth/google';
+    } catch (error) {
+      console.error('Google login error:', error);
+      setIsSigningIn(false);
+    }
+  };
+
+  const handleGoogleSignOut = async () => {
+    try {
+      await signOut();
+      // 페이지 새로고침
+      window.location.reload();
+    } catch (error) {
+      console.error('Google logout error:', error);
+    }
   };
 
   const isModalContext = className?.includes('w-full');
+  
+  // Google OAuth가 비활성화된 경우 메시지 표시
+  if (!isGoogleOAuthEnabled) {
+    return (
+      <div className={className}>
+        <div className="text-sm text-gray-500 p-2 border border-dashed border-gray-300 rounded-lg bg-gray-50 dark:bg-gray-800 dark:border-gray-600">
+          <div className="flex items-center gap-2 mb-1">
+            <svg className="w-4 h-4 text-gray-400" viewBox="0 0 24 24">
+              <path
+                fill="currentColor"
+                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
+              />
+            </svg>
+            <span className="font-medium">Google 로그인 사용 불가</span>
+          </div>
+          <p className="text-xs text-gray-400 ml-6">
+            {message || 'Vercel 프리뷰 환경에서는 Google 로그인을 사용할 수 없습니다.'}
+          </p>
+          <p className="text-xs text-gray-400 ml-6 mt-1">
+            메인 도메인에서 사용하거나 일반 로그인을 이용해주세요.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -63,9 +112,11 @@ export function GoogleAuthButton({ className = '', showUserInfo = false }: Googl
           <Button
             onClick={handleGoogleSignIn}
             variant="outline"
-            className={`flex items-center gap-2 bg-white text-gray-700 border-gray-300 hover:bg-gray-50 ${isModalContext ? 'w-full py-3' : ''}`}
+            disabled={isSigningIn}
+            className={`flex items-center gap-2 bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700 ${isModalContext ? 'w-full py-3' : ''}`}
             style={isModalContext ? { fontFamily: "'Pretendard', sans-serif" } : {}}
           >
+            {isSigningIn && <Loader2 className="w-4 h-4 animate-spin" />}
             <svg className="w-4 h-4" viewBox="0 0 24 24">
               <path
                 fill="currentColor"
@@ -84,7 +135,7 @@ export function GoogleAuthButton({ className = '', showUserInfo = false }: Googl
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            Google로 로그인
+            {isSigningIn ? '로그인 중...' : 'Google로 로그인'}
           </Button>
           {window.location.origin.includes('.replit') && !isModalContext && (
             <Button

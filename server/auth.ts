@@ -19,27 +19,64 @@ export interface AuthRequest extends Request {
   };
 }
 
+// 허용된 Google OAuth 도메인 목록
+const ALLOWED_OAUTH_DOMAINS = [
+  'localhost:5000',
+  'collect-topaz.vercel.app',
+  // 필요한 경우 여기에 추가 도메인 입력
+];
+
+// 현재 도메인이 Google OAuth를 사용할 수 있는지 확인
+export function isGoogleOAuthAllowed(host: string): boolean {
+  if (!host) return false;
+  
+  // 프로토콜 제거하고 도메인만 추출
+  const domain = host.replace(/^https?:\/\//, '').split('/')[0];
+  
+  // 허용된 도메인 목록에 있는지 확인
+  return ALLOWED_OAUTH_DOMAINS.some(allowed => 
+    domain === allowed || domain.startsWith(allowed)
+  );
+}
+
 // Google OAuth 설정
 export function initializeGoogleOAuth() {
   const googleClientId = process.env.GOOGLE_CLIENT_ID;
   const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
   
-  // Dynamically set redirect URI based on environment
+  // Redirect URI 설정 - 명확한 우선순위
   let googleRedirectUri = process.env.GOOGLE_REDIRECT_URI;
+  
   if (!googleRedirectUri) {
-    if (process.env.VERCEL_URL) {
-      googleRedirectUri = `https://${process.env.VERCEL_URL}/api/auth/google/callback`;
-    } else if (process.env.NODE_ENV === 'production') {
+    // 1. 명시적 환경 변수가 있으면 사용
+    if (process.env.GOOGLE_REDIRECT_URI) {
+      googleRedirectUri = process.env.GOOGLE_REDIRECT_URI;
+    }
+    // 2. Vercel 프로덕션 도메인
+    else if (process.env.VERCEL_ENV === 'production') {
       googleRedirectUri = 'https://collect-topaz.vercel.app/api/auth/google/callback';
-    } else {
+    }
+    // 3. Vercel 프리뷰는 지원하지 않음 (와일드카드 불가)
+    else if (process.env.VERCEL_ENV === 'preview') {
+      console.log('Google OAuth is not supported on Vercel preview deployments (wildcard domains not allowed)');
+      return;
+    }
+    // 4. 로컬 개발
+    else {
       googleRedirectUri = 'http://localhost:5000/api/auth/google/callback';
     }
   }
 
   if (!googleClientId || !googleClientSecret) {
     console.log('Google OAuth not configured. Skipping Google authentication setup.');
+    console.log('To enable Google OAuth, set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables.');
     return;
   }
+
+  console.log('Initializing Google OAuth');
+  console.log('Environment:', process.env.NODE_ENV);
+  console.log('Vercel Environment:', process.env.VERCEL_ENV);
+  console.log('Redirect URI:', googleRedirectUri);
 
   passport.use(new GoogleStrategy({
     clientID: googleClientId,

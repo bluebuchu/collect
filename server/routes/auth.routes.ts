@@ -7,7 +7,8 @@ import {
   passwordResetSchema,
   findEmailSchema
 } from "@shared/schema";
-import { AuthService, authMiddleware, requireAuth, type AuthRequest } from "../auth";
+import { AuthService, authMiddleware, requireAuth, isGoogleOAuthAllowed, type AuthRequest } from "../auth";
+import * as authModule from "../auth";
 import { storage } from "../storage";
 import { emailService } from "../email";
 import multer from "multer";
@@ -321,16 +322,118 @@ router.get("/api/auth/google",
 );
 
 router.get("/api/auth/google/callback",
-  passport.authenticate('google', { failureRedirect: '/login' }),
+  passport.authenticate('google', { 
+    failureRedirect: '/?error=google_auth_failed&reason=redirect_uri_mismatch' 
+  }),
   async (req: any, res) => {
     // 구글 로그인 성공 후 세션에 사용자 정보 저장
     if (req.user) {
       req.session.userId = req.user.id;
       req.session.user = req.user;
+      // 성공 메시지와 함께 리디렉션
+      res.redirect('/?success=google_login');
+    } else {
+      // 사용자 정보가 없는 경우
+      res.redirect('/?error=google_auth_failed');
     }
-    // 클라이언트 홈페이지로 리디렉션
-    res.redirect('/');
   }
 );
+
+// Google OAuth 상태 확인
+router.get("/api/auth/google/status", async (req: AuthRequest, res) => {
+  try {
+    // Google OAuth 가능 여부 확인
+    const host = req.get('host') || '';
+    const isOAuthAllowed = authModule.isGoogleOAuthAllowed(host);
+    
+    let user = null;
+    if (req.session?.userId) {
+      const userData = await storage.getUserById(req.session.userId);
+      if (userData) {
+        user = {
+          id: userData.id,
+          email: userData.email,
+          nickname: userData.nickname,
+          profileImage: userData.profileImage,
+          bio: userData.bio
+        };
+      }
+    }
+    
+    res.json({ 
+      user,
+      isGoogleOAuthEnabled: isOAuthAllowed,
+      currentHost: host,
+      message: isOAuthAllowed ? null : 'Google OAuth is not available on preview deployments'
+    });
+  } catch (error) {
+    console.error("Google OAuth status check error:", error);
+    res.json({ 
+      user: null, 
+      isGoogleOAuthEnabled: false,
+      message: 'Error checking OAuth status'
+    });
+  }
+});
+
+// Google OAuth 로그아웃
+router.post("/api/auth/google/logout", (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ error: "로그아웃 처리 중 오류가 발생했습니다" });
+    }
+    res.clearCookie('sessionId');
+    res.json({ message: "Google 로그아웃되었습니다" });
+  });
+});
+
+// Supabase Auth 사용자 동기화
+router.post("/api/auth/sync", async (req: AuthRequest, res) => {
+  try {
+    const { id, email, name, avatar, provider } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    // 기존 사용자 확인
+    let user = await storage.getUserByEmail(email);
+    
+    if (!user) {
+      // 새 사용자 생성
+      user = await storage.createUser({
+        email,
+        nickname: name || email.split('@')[0],
+        password: `supabase_${id}_${Date.now()}`, // Supabase Auth 사용자는 패스워드 불필요
+        profileImage: avatar,
+        bio: `Joined via ${provider}`
+      });
+    } else {
+      // 기존 사용자 업데이트
+      if (avatar && !user.profileImage) {
+        await storage.updateUser(user.id, { 
+          profileImage: avatar 
+        });
+      }
+    }
+
+    // 세션 생성
+    req.session.userId = user.id;
+    req.session.user = user;
+    
+    res.json({ 
+      success: true, 
+      user: {
+        id: user.id,
+        email: user.email,
+        nickname: user.nickname,
+        profileImage: user.profileImage
+      }
+    });
+  } catch (error: any) {
+    console.error("Supabase user sync error:", error);
+    res.status(500).json({ error: "Failed to sync user data" });
+  }
+});
 
 export default router;
