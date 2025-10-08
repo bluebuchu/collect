@@ -22,10 +22,12 @@ import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 function Router() {
   const { user, isAuthenticated, isLoading, error } = useAuth();
   const { user: googleUser, isAuthenticated: isGoogleAuthenticated } = useGoogleAuth();
+  const { isAuthenticated: isSupabaseAuthenticated, isLoading: isSupabaseLoading } = useSupabaseAuth();
 
-  console.log("Router - Auth state:", { user, isAuthenticated, isLoading, error, googleUser, isGoogleAuthenticated });
+  console.log("Router - Auth state:", { user, isAuthenticated, isLoading, error, googleUser, isGoogleAuthenticated, isSupabaseAuthenticated });
 
-  if (isLoading) {
+  // 모든 인증 시스템이 로딩 중일 때만 로딩 표시
+  if (isLoading || isSupabaseLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -33,8 +35,8 @@ function Router() {
     );
   }
 
-  // 기존 사용자나 Google 사용자 중 하나라도 인증되어 있으면 홈으로 이동
-  const hasAnyAuth = isAuthenticated || isGoogleAuthenticated;
+  // 기존 사용자, Google 사용자, Supabase 사용자 중 하나라도 인증되어 있으면 홈으로 이동
+  const hasAnyAuth = isAuthenticated || isGoogleAuthenticated || isSupabaseAuthenticated;
 
   return (
     <Switch>

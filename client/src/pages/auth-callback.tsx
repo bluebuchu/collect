@@ -7,32 +7,47 @@ export default function AuthCallback() {
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    // URL에서 인증 코드 처리
-    supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        console.log('Successfully signed in via OAuth');
+    const handleAuthCallback = async () => {
+      try {
+        // URL 해시에서 에러 확인
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const error = hashParams.get('error');
+        const errorDescription = hashParams.get('error_description');
         
-        // 기존 사용자 데이터와 동기화 (필요한 경우)
-        syncUserData(session.user);
-        
-        // 홈으로 리디렉션
-        setTimeout(() => {
-          setLocation('/');
-        }, 1000);
-      } else if (event === 'SIGNED_OUT') {
-        setLocation('/');
-      }
-    });
+        if (error) {
+          console.error('Auth error:', error, errorDescription);
+          setLocation('/?error=' + encodeURIComponent(errorDescription || error));
+          return;
+        }
 
-    // URL 해시에서 에러 확인
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const error = hashParams.get('error');
-    const errorDescription = hashParams.get('error_description');
-    
-    if (error) {
-      console.error('Auth error:', error, errorDescription);
-      setLocation('/?error=' + encodeURIComponent(errorDescription || error));
-    }
+        // 현재 세션 확인
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          setLocation('/?error=' + encodeURIComponent(sessionError.message));
+          return;
+        }
+
+        if (session) {
+          console.log('Successfully signed in via OAuth');
+          
+          // 기존 사용자 데이터와 동기화 (필요한 경우)
+          await syncUserData(session.user);
+          
+          // 홈으로 리디렉션
+          setLocation('/');
+        } else {
+          // 세션이 없으면 랜딩 페이지로
+          setLocation('/');
+        }
+      } catch (err) {
+        console.error('Auth callback error:', err);
+        setLocation('/?error=auth_callback_failed');
+      }
+    };
+
+    handleAuthCallback();
   }, [setLocation]);
 
   // 사용자 데이터 동기화 (Supabase Auth와 기존 DB)
