@@ -25,7 +25,8 @@ export function useAuth() {
         });
         
         if (!response.ok) {
-          if (response.status === 401 && token) {
+          if (response.status === 401) {
+            // 401 에러 시 JWT 토큰만 삭제
             removeToken();
           }
           throw new Error('Not authenticated');
@@ -34,13 +35,15 @@ export function useAuth() {
         const data = await response.json();
         return data.user;
       } catch (error) {
+        // 에러 발생 시에도 JWT 토큰만 삭제
+        removeToken();
         throw new Error('Not authenticated');
       }
     },
     retry: false,
     staleTime: 0,
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    refetchOnWindowFocus: false,  // 401 에러 시 무한 요청 방지
+    refetchOnMount: false,  // 마운트 시 재요청 방지
     refetchInterval: false,
   });
 
@@ -158,8 +161,11 @@ export function useLogout() {
   
   return useMutation({
     mutationFn: async () => {
-      // Remove JWT token
+      // Remove JWT token only (preserve other auth systems)
       removeToken();
+      
+      // Clear only session-related items, not all localStorage
+      sessionStorage.clear();
       
       // Also call logout endpoint to destroy session (if any)
       try {
@@ -178,10 +184,16 @@ export function useLogout() {
       return { success: true };
     },
     onSuccess: () => {
+      // 쿼리 캐시 완전 초기화
       queryClient.clear();
-      sessionStorage.removeItem('hasShownDailySentence'); // Clear on logout
-      // 로그아웃 후 첫 페이지로 이동
-      window.location.href = "/";
+      queryClient.removeQueries();
+      
+      // 완전한 페이지 새로고침으로 모든 상태 초기화
+      // setTimeout으로 확실하게 처리
+      setTimeout(() => {
+        window.location.href = "/";
+        window.location.reload();
+      }, 100);
     },
   });
 }

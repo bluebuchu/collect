@@ -23,13 +23,15 @@ import ReadingNoteModal from "@/components/reading-note-modal";
 
 import { useAuth, useLogout } from "@/hooks/useAuth";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import type { SentenceWithUser } from "@shared/schema";
 
 const SENTENCES_PER_PAGE = 10;
 
 export default function Home() {
   const { user, isLoading, isAuthenticated } = useAuth();
-  const { user: googleUser, isAuthenticated: isGoogleAuthenticated } = useGoogleAuth();
+  const { user: googleUser, isAuthenticated: isGoogleAuthenticated, signOut: googleSignOut } = useGoogleAuth();
+  const { isAuthenticated: isSupabaseAuthenticated, signOut: supabaseSignOut } = useSupabaseAuth();
   const logoutMutation = useLogout();
   const [, setLocation] = useLocation();
   
@@ -124,31 +126,9 @@ export default function Home() {
   const totalLikes = allFilteredSentences.reduce((sum, s) => sum + s.likes, 0);
   const bookSentences = allFilteredSentences.filter(s => s.bookTitle).length;
 
+  // App.tsx에서 이미 인증 체크를 하므로 여기서는 간단한 로딩만 표시
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p className="text-gray-600">로딩 중...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user && !googleUser && !isAuthenticated && !isGoogleAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600 mb-4">로그인이 필요합니다</p>
-          <button 
-            onClick={() => setLocation("/")}
-            className="px-4 py-2 bg-black text-white rounded"
-          >
-            로그인 페이지로
-          </button>
-        </div>
-      </div>
-    );
+    return null; // 또는 아무것도 표시하지 않음
   }
 
   return (
@@ -194,7 +174,21 @@ export default function Home() {
               </Button>
               <ThemeToggle />
               <Button
-                onClick={() => logoutMutation.mutate()}
+                onClick={async () => {
+                  // 모든 인증 시스템에서 로그아웃
+                  if (isGoogleAuthenticated && googleSignOut) {
+                    await googleSignOut();
+                  }
+                  if (isSupabaseAuthenticated && supabaseSignOut) {
+                    await supabaseSignOut();
+                  }
+                  if (isAuthenticated) {
+                    logoutMutation.mutate();
+                  } else {
+                    // JWT 인증이 없는 경우에도 강제 리다이렉트
+                    window.location.replace("/");
+                  }
+                }}
                 variant="ghost"
                 size="icon"
               >

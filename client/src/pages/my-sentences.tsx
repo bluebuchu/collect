@@ -123,8 +123,9 @@ export default function MySentences() {
     return <div className="min-h-screen flex items-center justify-center">로딩 중...</div>;
   }
 
+  // App.tsx에서 라우팅 제어하므로 여기서 체크 불필요
   if (!user) {
-    return <div className="min-h-screen flex items-center justify-center">로그인이 필요합니다.</div>;
+    return null;
   }
 
   const renderSentenceCard = (sentence: SentenceWithUser) => (

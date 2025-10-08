@@ -35,8 +35,9 @@ function Router() {
     isSupabaseLoading 
   });
 
-  // Supabase만 로딩 중이면 로딩 표시 (기존 시스템은 빠르게 실패함)
-  if (isSupabaseLoading) {
+  // Supabase만 로딩 중이고 에러가 없을 때만 로딩 표시
+  // JWT는 빠르게 실패하므로 JWT 로딩은 무시
+  if (isSupabaseLoading && !error && !isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -44,8 +45,12 @@ function Router() {
     );
   }
 
-  // 기존 사용자, Google 사용자, Supabase 사용자 중 하나라도 인증되어 있으면 홈으로 이동
-  const hasAnyAuth = isAuthenticated || isGoogleAuthenticated || isSupabaseAuthenticated;
+  // 각 인증 시스템을 독립적으로 처리
+  // JWT 에러는 JWT 인증에만 영향을 주고, Google/Supabase 인증은 독립적으로 작동
+  const hasJwtAuth = !error && !isLoading && isAuthenticated;
+  const hasAnyAuth = hasJwtAuth || isGoogleAuthenticated || isSupabaseAuthenticated;
+  
+  console.log("Router - hasAnyAuth:", hasAnyAuth, "JWT:", hasJwtAuth, "Google:", isGoogleAuthenticated, "Supabase:", isSupabaseAuthenticated);
 
   return (
     <Switch>
@@ -55,9 +60,10 @@ function Router() {
       {/* Password reset page is accessible to everyone */}
       <Route path="/reset-password" component={ResetPasswordPage} />
       
-      {!hasAnyAuth ? (
+      {hasAnyAuth ? (
         <>
-          <Route path="/" component={Landing} />
+          <Route path="/" component={Home} />
+          <Route path="/my-sentences" component={MySentences} />
           <Route path="/communities" component={CommunitiesHub} />
           <Route path="/community" component={CommunitiesHub} />
           <Route path="/community/:id" component={CommunityDetail} />
@@ -67,8 +73,7 @@ function Router() {
         </>
       ) : (
         <>
-          <Route path="/" component={Home} />
-          <Route path="/my-sentences" component={MySentences} />
+          <Route path="/" component={Landing} />
           <Route path="/communities" component={CommunitiesHub} />
           <Route path="/community" component={CommunitiesHub} />
           <Route path="/community/:id" component={CommunityDetail} />

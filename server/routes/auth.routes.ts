@@ -158,7 +158,7 @@ router.post("/api/auth/logout", (req, res) => {
     if (err) {
       return res.status(500).json({ error: "로그아웃 처리 중 오류가 발생했습니다" });
     }
-    res.clearCookie('connect.sid');
+    res.clearCookie('sessionId', { path: '/' });
     res.json({ message: "로그아웃되었습니다" });
   });
 });
@@ -382,7 +382,7 @@ router.post("/api/auth/google/logout", (req, res) => {
     if (err) {
       return res.status(500).json({ error: "로그아웃 처리 중 오류가 발생했습니다" });
     }
-    res.clearCookie('sessionId');
+    res.clearCookie('sessionId', { path: '/' });
     res.json({ message: "Google 로그아웃되었습니다" });
   });
 });

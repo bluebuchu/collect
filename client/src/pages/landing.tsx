@@ -17,13 +17,17 @@ export default function Landing() {
   }, []);
 
   const openLoginModal = () => {
+    console.log("로그인 버튼 클릭됨");
     setAuthModalTab("login");
     setShowAuthModal(true);
+    console.log("showAuthModal 상태 변경:", true, "탭:", "login");
   };
 
   const openRegisterModal = () => {
+    console.log("회원가입 버튼 클릭됨");
     setAuthModalTab("register");
     setShowAuthModal(true);
+    console.log("showAuthModal 상태 변경:", true, "탭:", "register");
   };
 
   return (
@@ -63,19 +67,29 @@ export default function Landing() {
       <div className="absolute top-4 right-4 sm:top-6 sm:right-6 lg:top-8 lg:right-8 z-30 flex flex-col gap-2 sm:gap-3">
         <div className="flex gap-2 sm:gap-3 lg:gap-4">
           <Button
-            onClick={openLoginModal}
+            onClick={(e) => {
+              console.log("로그인 버튼 onClick 이벤트 발생");
+              e.preventDefault();
+              e.stopPropagation();
+              openLoginModal();
+            }}
             variant="outline"
             size="sm"
             className="bg-white/90 hover:bg-white text-black border-white/20 backdrop-blur-sm text-xs sm:text-xs lg:text-sm px-2.5 py-1 sm:px-3 sm:py-1.5 lg:px-5 lg:py-2 transition-all duration-300 hover:scale-105"
-            style={{ fontFamily: "'Pretendard', sans-serif", fontWeight: 400 }}
+            style={{ fontFamily: "'Pretendard', sans-serif", fontWeight: 400, pointerEvents: 'auto', zIndex: 999 }}
           >
             로그인
           </Button>
           <Button
-            onClick={openRegisterModal}
+            onClick={(e) => {
+              console.log("회원가입 버튼 onClick 이벤트 발생");
+              e.preventDefault();
+              e.stopPropagation();
+              openRegisterModal();
+            }}
             size="sm"
             className="bg-black/80 hover:bg-black text-white backdrop-blur-sm text-xs sm:text-xs lg:text-sm px-2.5 py-1 sm:px-3 sm:py-1.5 lg:px-5 lg:py-2 transition-all duration-300 hover:scale-105"
-            style={{ fontFamily: "'Pretendard', sans-serif", fontWeight: 400 }}
+            style={{ fontFamily: "'Pretendard', sans-serif", fontWeight: 400, pointerEvents: 'auto', zIndex: 999 }}
           >
             회원가입
           </Button>
