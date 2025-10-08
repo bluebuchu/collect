@@ -44,25 +44,26 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Session configuration
-// Note: In Vercel serverless, we cannot use MemoryStore
-// Sessions will be stored in cookies directly
+// Note: In Vercel serverless, sessions don't persist between requests
+// Each request is independent, so we rely on client-side state management
 const sessionConfig: session.SessionOptions = {
   secret: process.env.SESSION_SECRET || 'dev-secret-key-change-in-production',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // HTTPS in production, HTTP in dev
+    secure: true, // Always secure in production
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    sameSite: 'lax', // Changed to 'lax' for better Chrome compatibility
-    // Remove domain setting to let browser handle it automatically
-    path: '/'
+    sameSite: 'lax', // Better compatibility with Chrome
+    path: '/',
+    // Explicitly set domain to undefined for automatic handling
+    domain: undefined
   },
   name: 'sessionId', // Custom session name
-  // Remove store to use default cookie storage in serverless environment
-  // store: new MemoryStoreConstructor({
-  //   checkPeriod: 86400000 // prune expired entries every 24h
-  // })
+  // In Vercel serverless, we cannot maintain session state
+  // Using cookie-based sessions for stateless operation
+  rolling: true, // Reset cookie Max-Age on every request
+  proxy: true // Trust the reverse proxy
 };
 
 app.use(session(sessionConfig));

@@ -237,18 +237,24 @@ export function useLogout() {
         });
       }
       
-      console.log("[Logout] Redirecting to home page...");
+      console.log("[Logout] Performing hard reload...");
       
-      // 완전한 페이지 새로고침으로 모든 상태 초기화
-      // Chrome을 위해 더 강력한 리로드
-      setTimeout(() => {
-        // 먼저 홈으로 이동
-        window.location.href = "/";
-        // 그 다음 강제 리로드
+      // Vercel 프로덕션에서 확실한 로그아웃을 위한 하드 리로드
+      // 모든 JavaScript 상태와 메모리를 완전히 초기화
+      const isProduction = window.location.hostname.includes('vercel.app');
+      
+      if (isProduction) {
+        // 프로덕션: 즉시 하드 리로드
+        window.location.href = window.location.origin + '/?logout=true&t=' + Date.now();
+      } else {
+        // 로컬 개발: 기존 방식
         setTimeout(() => {
-          window.location.reload(true);
-        }, 50);
-      }, 100);
+          window.location.href = "/";
+          setTimeout(() => {
+            window.location.reload(true);
+          }, 50);
+        }, 100);
+      }
     },
   });
 }
