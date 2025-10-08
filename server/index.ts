@@ -44,7 +44,7 @@ app.use(session({
     secure: isProduction, // HTTPS in production, HTTP in dev
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    sameSite: isProduction ? 'none' : 'lax', // Cross-origin in production, lax in dev
+    sameSite: 'lax', // Always use 'lax' for better compatibility
     // domain 설정 제거 - 브라우저가 자동으로 처리하도록 함
     path: '/'
   },

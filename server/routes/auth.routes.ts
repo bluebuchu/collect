@@ -159,6 +159,7 @@ router.post("/api/auth/logout", (req, res) => {
   console.log("[Logout] User:", req.session?.user?.email);
   console.log("[Logout] Cookies:", req.cookies);
   console.log("[Logout] User-Agent:", req.headers['user-agent']);
+  console.log("[Logout] Host:", req.headers.host);
   
   req.session.destroy((err) => {
     if (err) {
@@ -166,29 +167,65 @@ router.post("/api/auth/logout", (req, res) => {
       return res.status(500).json({ error: "로그아웃 처리 중 오류가 발생했습니다" });
     }
     
-    // 환경에 따른 쿠키 옵션 설정
+    // 호스트에서 도메인 추출
+    const host = req.headers.host || '';
+    const isVercel = host.includes('vercel.app');
     const isProduction = process.env.NODE_ENV === 'production';
-    const cookieOptions = {
-      path: '/',
-      httpOnly: true,
-      sameSite: (isProduction ? 'none' : 'lax') as const,
-      secure: isProduction,
-      // Chrome을 위한 추가 옵션
-      ...(isProduction && { domain: undefined }) // domain을 명시적으로 undefined로 설정
-    };
     
-    console.log("[Logout] Clearing cookies with options:", cookieOptions);
+    // Vercel에서의 도메인 처리
+    let domain: string | undefined;
+    if (isVercel) {
+      // .vercel.app 도메인 추출
+      const domainMatch = host.match(/([^.]+\.vercel\.app)/);
+      domain = domainMatch ? `.${domainMatch[1]}` : undefined;
+    }
     
-    // 모든 가능한 세션 쿠키 삭제
-    res.clearCookie('sessionId', cookieOptions);
-    res.clearCookie('connect.sid', cookieOptions);
+    console.log("[Logout] Environment:", { isProduction, isVercel, host, domain });
     
-    // Chrome 특별 처리: 도메인 없이도 한 번 더 시도
-    res.clearCookie('sessionId', { path: '/' });
-    res.clearCookie('connect.sid', { path: '/' });
+    // 여러 조합으로 쿠키 삭제 시도
+    const cookieVariants = [
+      // 1. 프로덕션 설정과 일치하는 옵션
+      {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax' as const,
+        secure: isProduction
+      },
+      // 2. 도메인 포함
+      {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax' as const,
+        secure: isProduction,
+        domain
+      },
+      // 3. 기본 설정
+      { path: '/' },
+      // 4. secure와 sameSite 없이
+      { 
+        path: '/',
+        httpOnly: true 
+      }
+    ];
     
-    console.log("[Logout] Logout completed successfully");
-    res.json({ message: "로그아웃되었습니다", cleared: true });
+    // 모든 조합으로 쿠키 삭제
+    cookieVariants.forEach((options, index) => {
+      console.log(`[Logout] Attempt ${index + 1} with options:`, options);
+      res.clearCookie('sessionId', options);
+      res.clearCookie('connect.sid', options);
+    });
+    
+    // Response headers에 Set-Cookie 헤더 강제 추가
+    if (isProduction) {
+      const expiredDate = new Date(0).toUTCString();
+      res.setHeader('Set-Cookie', [
+        `sessionId=; Path=/; Expires=${expiredDate}; HttpOnly`,
+        `connect.sid=; Path=/; Expires=${expiredDate}; HttpOnly`
+      ]);
+    }
+    
+    console.log("[Logout] Logout completed with multiple attempts");
+    res.json({ message: "로그아웃되었습니다", cleared: true, attempts: cookieVariants.length });
   });
 });
 
@@ -417,23 +454,31 @@ router.post("/api/auth/google/logout", (req, res) => {
       return res.status(500).json({ error: "로그아웃 처리 중 오류가 발생했습니다" });
     }
     
-    // 환경에 따른 쿠키 옵션 설정
+    // 호스트에서 도메인 추출
+    const host = req.headers.host || '';
+    const isVercel = host.includes('vercel.app');
     const isProduction = process.env.NODE_ENV === 'production';
-    const cookieOptions = {
-      path: '/',
-      httpOnly: true,
-      sameSite: (isProduction ? 'none' : 'lax') as const,
-      secure: isProduction,
-      ...(isProduction && { domain: undefined })
-    };
     
-    // 모든 가능한 세션 쿠키 삭제
-    res.clearCookie('sessionId', cookieOptions);
-    res.clearCookie('connect.sid', cookieOptions);
+    // 여러 조합으로 쿠키 삭제 시도
+    const cookieVariants = [
+      { path: '/', httpOnly: true, sameSite: 'lax' as const, secure: isProduction },
+      { path: '/', httpOnly: true },
+      { path: '/' }
+    ];
     
-    // Chrome 특별 처리
-    res.clearCookie('sessionId', { path: '/' });
-    res.clearCookie('connect.sid', { path: '/' });
+    cookieVariants.forEach((options) => {
+      res.clearCookie('sessionId', options);
+      res.clearCookie('connect.sid', options);
+    });
+    
+    // Response headers에 Set-Cookie 헤더 강제 추가
+    if (isProduction) {
+      const expiredDate = new Date(0).toUTCString();
+      res.setHeader('Set-Cookie', [
+        `sessionId=; Path=/; Expires=${expiredDate}; HttpOnly`,
+        `connect.sid=; Path=/; Expires=${expiredDate}; HttpOnly`
+      ]);
+    }
     
     console.log("[Google Logout] Logout completed successfully");
     res.json({ message: "Google 로그아웃되었습니다", cleared: true });

@@ -163,9 +163,10 @@ export function useLogout() {
     mutationFn: async () => {
       console.log("[Logout] Starting logout process...");
       
-      // Chrome 브라우저 감지
+      // 브라우저 및 환경 감지
       const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
-      console.log("[Logout] Is Chrome:", isChrome);
+      const isProduction = window.location.hostname.includes('vercel.app');
+      console.log("[Logout] Environment:", { isChrome, isProduction, host: window.location.hostname });
       
       // 1. JWT 토큰 제거
       removeToken();
@@ -173,26 +174,22 @@ export function useLogout() {
       
       // 2. 모든 스토리지 클리어
       sessionStorage.clear();
+      localStorage.clear(); // 프로덕션에서는 완전 클리어
       
-      // 3. localStorage에서 인증 관련 항목 명시적 제거
-      const keysToRemove = ['auth_token', 'jwt_token', 'user', 'session', 'sessionId'];
-      keysToRemove.forEach(key => {
-        localStorage.removeItem(key);
-        // 다양한 prefix 고려
-        localStorage.removeItem(`collect_${key}`);
-      });
-      console.log("[Logout] Storage cleared");
+      console.log("[Logout] Storage cleared completely");
       
-      // 4. 서버 세션 파괴
+      // 3. 서버 세션 파괴
       try {
         const response = await fetch("/api/auth/logout", {
           method: "POST",
           credentials: "include",
           headers: {
-            'Cache-Control': 'no-cache',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Pragma': 'no-cache',
-            // Chrome을 위한 추가 헤더
-            ...(isChrome && { 'X-Chrome-Logout': 'true' })
+            'Expires': '0',
+            // Chrome과 프로덕션 정보 전달
+            ...(isChrome && { 'X-Chrome-Logout': 'true' }),
+            ...(isProduction && { 'X-Production-Logout': 'true' })
           }
         });
         
@@ -200,20 +197,27 @@ export function useLogout() {
         console.log("[Logout] Server response:", result);
         
         if (!response.ok) {
-          console.warn("[Logout] Session logout failed, but token removed");
+          console.warn("[Logout] Session logout failed, but proceeding with client cleanup");
         }
       } catch (error) {
-        console.warn("[Logout] Session logout failed, but token removed:", error);
+        console.warn("[Logout] Session logout error, but proceeding:", error);
       }
       
-      // Chrome 특별 처리: 쿠키 직접 삭제 시도
-      if (isChrome) {
-        document.cookie.split(";").forEach((c) => {
-          document.cookie = c
-            .replace(/^ +/, "")
-            .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      // Chrome + 프로덕션 특별 처리
+      if (isChrome && isProduction) {
+        // 쿠키 강제 삭제 시도 (여러 도메인 조합)
+        const cookieNames = ['sessionId', 'connect.sid'];
+        const domains = ['', '.vercel.app', `.${window.location.hostname}`];
+        
+        cookieNames.forEach(name => {
+          domains.forEach(domain => {
+            // 과거 날짜로 설정하여 쿠키 삭제
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; ${domain ? `domain=${domain};` : ''}`;
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; ${domain ? `domain=${domain};` : ''} secure; samesite=lax`;
+          });
         });
-        console.log("[Logout] Chrome: Attempted to clear cookies directly");
+        
+        console.log("[Logout] Chrome production: Forced cookie deletion attempted");
       }
       
       return { success: true };

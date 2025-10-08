@@ -54,7 +54,7 @@ const sessionConfig: session.SessionOptions = {
     secure: process.env.NODE_ENV === 'production', // HTTPS in production, HTTP in dev
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Cross-origin in production
+    sameSite: 'lax', // Changed to 'lax' for better Chrome compatibility
     // Remove domain setting to let browser handle it automatically
     path: '/'
   },
