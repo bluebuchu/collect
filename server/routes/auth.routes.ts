@@ -154,12 +154,41 @@ router.post("/api/auth/login", async (req, res) => {
 
 // Logout
 router.post("/api/auth/logout", (req, res) => {
+  // 디버깅: 로그아웃 시작
+  console.log("[Logout] Session ID:", req.sessionID);
+  console.log("[Logout] User:", req.session?.user?.email);
+  console.log("[Logout] Cookies:", req.cookies);
+  console.log("[Logout] User-Agent:", req.headers['user-agent']);
+  
   req.session.destroy((err) => {
     if (err) {
+      console.error("[Logout] Session destroy error:", err);
       return res.status(500).json({ error: "로그아웃 처리 중 오류가 발생했습니다" });
     }
+    
+    // 환경에 따른 쿠키 옵션 설정
+    const isProduction = process.env.NODE_ENV === 'production';
+    const cookieOptions = {
+      path: '/',
+      httpOnly: true,
+      sameSite: (isProduction ? 'none' : 'lax') as const,
+      secure: isProduction,
+      // Chrome을 위한 추가 옵션
+      ...(isProduction && { domain: undefined }) // domain을 명시적으로 undefined로 설정
+    };
+    
+    console.log("[Logout] Clearing cookies with options:", cookieOptions);
+    
+    // 모든 가능한 세션 쿠키 삭제
+    res.clearCookie('sessionId', cookieOptions);
+    res.clearCookie('connect.sid', cookieOptions);
+    
+    // Chrome 특별 처리: 도메인 없이도 한 번 더 시도
     res.clearCookie('sessionId', { path: '/' });
-    res.json({ message: "로그아웃되었습니다" });
+    res.clearCookie('connect.sid', { path: '/' });
+    
+    console.log("[Logout] Logout completed successfully");
+    res.json({ message: "로그아웃되었습니다", cleared: true });
   });
 });
 
@@ -378,12 +407,36 @@ router.get("/api/auth/google/status", async (req: AuthRequest, res) => {
 
 // Google OAuth 로그아웃
 router.post("/api/auth/google/logout", (req, res) => {
+  // 디버깅: Google 로그아웃 시작
+  console.log("[Google Logout] Session ID:", req.sessionID);
+  console.log("[Google Logout] User:", req.session?.user?.email);
+  
   req.session.destroy((err) => {
     if (err) {
+      console.error("[Google Logout] Session destroy error:", err);
       return res.status(500).json({ error: "로그아웃 처리 중 오류가 발생했습니다" });
     }
+    
+    // 환경에 따른 쿠키 옵션 설정
+    const isProduction = process.env.NODE_ENV === 'production';
+    const cookieOptions = {
+      path: '/',
+      httpOnly: true,
+      sameSite: (isProduction ? 'none' : 'lax') as const,
+      secure: isProduction,
+      ...(isProduction && { domain: undefined })
+    };
+    
+    // 모든 가능한 세션 쿠키 삭제
+    res.clearCookie('sessionId', cookieOptions);
+    res.clearCookie('connect.sid', cookieOptions);
+    
+    // Chrome 특별 처리
     res.clearCookie('sessionId', { path: '/' });
-    res.json({ message: "Google 로그아웃되었습니다" });
+    res.clearCookie('connect.sid', { path: '/' });
+    
+    console.log("[Google Logout] Logout completed successfully");
+    res.json({ message: "Google 로그아웃되었습니다", cleared: true });
   });
 });
 

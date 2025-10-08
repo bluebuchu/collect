@@ -161,38 +161,89 @@ export function useLogout() {
   
   return useMutation({
     mutationFn: async () => {
-      // Remove JWT token only (preserve other auth systems)
-      removeToken();
+      console.log("[Logout] Starting logout process...");
       
-      // Clear only session-related items, not all localStorage
+      // Chrome 브라우저 감지
+      const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+      console.log("[Logout] Is Chrome:", isChrome);
+      
+      // 1. JWT 토큰 제거
+      removeToken();
+      console.log("[Logout] JWT token removed");
+      
+      // 2. 모든 스토리지 클리어
       sessionStorage.clear();
       
-      // Also call logout endpoint to destroy session (if any)
+      // 3. localStorage에서 인증 관련 항목 명시적 제거
+      const keysToRemove = ['auth_token', 'jwt_token', 'user', 'session', 'sessionId'];
+      keysToRemove.forEach(key => {
+        localStorage.removeItem(key);
+        // 다양한 prefix 고려
+        localStorage.removeItem(`collect_${key}`);
+      });
+      console.log("[Logout] Storage cleared");
+      
+      // 4. 서버 세션 파괴
       try {
         const response = await fetch("/api/auth/logout", {
           method: "POST",
           credentials: "include",
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            // Chrome을 위한 추가 헤더
+            ...(isChrome && { 'X-Chrome-Logout': 'true' })
+          }
         });
         
+        const result = await response.json();
+        console.log("[Logout] Server response:", result);
+        
         if (!response.ok) {
-          console.warn("Session logout failed, but token removed");
+          console.warn("[Logout] Session logout failed, but token removed");
         }
       } catch (error) {
-        console.warn("Session logout failed, but token removed");
+        console.warn("[Logout] Session logout failed, but token removed:", error);
+      }
+      
+      // Chrome 특별 처리: 쿠키 직접 삭제 시도
+      if (isChrome) {
+        document.cookie.split(";").forEach((c) => {
+          document.cookie = c
+            .replace(/^ +/, "")
+            .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+        });
+        console.log("[Logout] Chrome: Attempted to clear cookies directly");
       }
       
       return { success: true };
     },
     onSuccess: () => {
+      console.log("[Logout] Clearing query cache...");
+      
       // 쿼리 캐시 완전 초기화
       queryClient.clear();
       queryClient.removeQueries();
+      queryClient.cancelQueries();
+      
+      // 브라우저 캐시도 초기화 시도
+      if ('caches' in window) {
+        caches.keys().then(names => {
+          names.forEach(name => caches.delete(name));
+        });
+      }
+      
+      console.log("[Logout] Redirecting to home page...");
       
       // 완전한 페이지 새로고침으로 모든 상태 초기화
-      // setTimeout으로 확실하게 처리
+      // Chrome을 위해 더 강력한 리로드
       setTimeout(() => {
+        // 먼저 홈으로 이동
         window.location.href = "/";
-        window.location.reload();
+        // 그 다음 강제 리로드
+        setTimeout(() => {
+          window.location.reload(true);
+        }, 50);
       }, 100);
     },
   });

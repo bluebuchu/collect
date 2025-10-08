@@ -51,11 +51,12 @@ const sessionConfig: session.SessionOptions = {
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: true, // Required for SameSite=none
+    secure: process.env.NODE_ENV === 'production', // HTTPS in production, HTTP in dev
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    sameSite: 'none', // Required for cross-origin requests
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Cross-origin in production
     // Remove domain setting to let browser handle it automatically
+    path: '/'
   },
   name: 'sessionId', // Custom session name
   // Remove store to use default cookie storage in serverless environment

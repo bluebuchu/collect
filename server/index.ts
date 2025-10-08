@@ -35,16 +35,17 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Session configuration - using memory store for development
+const isProduction = process.env.NODE_ENV === 'production';
 app.use(session({
   secret: process.env.SESSION_SECRET || 'sentence-collection-secret-key-2025',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // HTTP에서도 쿠키 작동하도록 설정
+    secure: isProduction, // HTTPS in production, HTTP in dev
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    sameSite: 'lax',
-    domain: 'localhost',
+    sameSite: isProduction ? 'none' : 'lax', // Cross-origin in production, lax in dev
+    // domain 설정 제거 - 브라우저가 자동으로 처리하도록 함
     path: '/'
   },
   name: 'sessionId'
