@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -22,17 +22,17 @@ import StatsWidget from "@/components/stats-widget";
 import ReadingNoteModal from "@/components/reading-note-modal";
 
 import { useAuth, useLogout } from "@/hooks/useAuth";
-import { useGoogleAuth } from "@/hooks/useGoogleAuth";
-import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { useToast } from "@/hooks/use-toast";
 import type { SentenceWithUser } from "@shared/schema";
 
 const SENTENCES_PER_PAGE = 10;
 
 export default function Home() {
   const { user, isLoading, isAuthenticated } = useAuth();
-  const { user: googleUser, isAuthenticated: isGoogleAuthenticated, signOut: googleSignOut } = useGoogleAuth();
-  const { isAuthenticated: isSupabaseAuthenticated, signOut: supabaseSignOut } = useSupabaseAuth();
   const logoutMutation = useLogout();
+  const { toast } = useToast();
+  
+  const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   
   const [searchQuery, setSearchQuery] = useState("");
@@ -48,11 +48,11 @@ export default function Home() {
   // Auto-show daily sentence only on initial login
   useEffect(() => {
     const hasShownToday = sessionStorage.getItem('hasShownDailySentence');
-    if ((user || googleUser) && (isAuthenticated || isGoogleAuthenticated) && !hasShownToday) {
+    if (user && isAuthenticated && !hasShownToday) {
       setIsGlassmorphismOpen(true);
       sessionStorage.setItem('hasShownDailySentence', 'true');
     }
-  }, [user, googleUser, isAuthenticated, isGoogleAuthenticated]); // Watch auth state changes
+  }, [user, isAuthenticated]); // Watch auth state changes
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "likes" | "length" | "page-asc" | "page-desc">("newest");
@@ -82,8 +82,8 @@ export default function Home() {
     retry: false
   });
 
-  // Apply filters
-  const allFilteredSentences = rawSentences?.filter(sentence => {
+  // Apply filters - rawSentences가 null/undefined일 경우 빈 배열 사용
+  const allFilteredSentences = (rawSentences || [])?.filter(sentence => {
     if (showOnlyBooks && !sentence.bookTitle) return false;
     if (pageFilter && sentence.pageNumber !== parseInt(pageFilter)) return false;
     if (selectedBookFilter && sentence.bookTitle !== selectedBookFilter) return false;
@@ -163,35 +163,21 @@ export default function Home() {
               >
                 <div className="flex items-center gap-1">
                   <div className="w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-xs font-bold">
-                    {(user?.nickname || googleUser?.nickname || "U")[0].toUpperCase()}
+                    {(user?.nickname || "U")[0].toUpperCase()}
                   </div>
                   <span className="hidden sm:inline max-w-[100px] truncate">
-                    {user?.nickname || googleUser?.nickname || "사용자"}
+                    {user?.nickname || "사용자"}
                   </span>
                 </div>
               </Button>
               <ThemeToggle />
               <Button
-                onClick={async () => {
-                  // 1. JWT 토큰만 선택적으로 제거 (다른 localStorage 항목은 유지)
-                  localStorage.removeItem('auth_token');
-                  sessionStorage.clear();
-                  
-                  // 2. 서버에 로그아웃 요청 (에러 무시)
-                  try {
-                    await fetch("/api/auth/logout", {
-                      method: "POST",
-                      credentials: "include"
-                    });
-                  } catch (e) {
-                    console.log("Server logout error:", e);
-                  }
-                  
-                  // 3. 즉시 페이지 완전 리로드
-                  window.location.href = "/";
+                onClick={() => {
+                  logoutMutation.mutate();
                 }}
                 variant="ghost"
                 size="icon"
+                title="로그아웃"
               >
                 <LogOut className="h-4 w-4" />
               </Button>

@@ -11,7 +11,6 @@ import { useToast } from "@/hooks/use-toast";
 import ForgotPasswordModal from "@/components/forgot-password-modal";
 import FindEmailModal from "@/components/find-email-modal";
 import { GoogleAuthButton } from "@/components/google-auth-button";
-import { SupabaseGoogleButton } from "@/components/supabase-google-button";
 
 interface AuthModalProps {
   open: boolean;
@@ -163,8 +162,8 @@ export default function AuthModal({ open, onClose, defaultTab = "login" }: AuthM
                   </div>
                 </div>
 
-                {/* Supabase Google 로그인 버튼 (모든 도메인 지원) */}
-                <SupabaseGoogleButton className="w-full" />
+                {/* Google 로그인 버튼 */}
+                <GoogleAuthButton className="w-full" />
 
                 {/* 아이디/비밀번호 찾기 링크 */}
                 <div className="flex justify-center gap-4 text-sm mt-4">

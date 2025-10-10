@@ -33,6 +33,26 @@ export default defineConfig({
         target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
+        configure: (proxy, _options) => {
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            // 쿠키 헤더 유지
+            if (req.headers.cookie) {
+              proxyReq.setHeader('Cookie', req.headers.cookie);
+            }
+          });
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
+            // Set-Cookie 헤더 처리
+            const cookies = proxyRes.headers['set-cookie'];
+            if (cookies) {
+              proxyRes.headers['set-cookie'] = cookies.map((cookie: string) => {
+                // SameSite와 Secure 속성 조정 (개발 환경용)
+                return cookie
+                  .replace(/SameSite=\w+/gi, 'SameSite=Lax')
+                  .replace(/;\s*Secure/gi, '');
+              });
+            }
+          });
+        },
       },
     },
   },

@@ -28,7 +28,7 @@ interface BookCoverCarouselProps {
 }
 
 // 책 장르별 색상 테마
-const getBookTheme = (title: string): string => {
+const getBookTheme = (title: string | null | undefined): string => {
   const themes = [
     "from-amber-100 to-orange-100 dark:from-amber-900/20 dark:to-orange-900/20",
     "from-blue-100 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20",
@@ -36,6 +36,11 @@ const getBookTheme = (title: string): string => {
     "from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20",
     "from-rose-100 to-red-100 dark:from-rose-900/20 dark:to-red-900/20",
   ];
+  
+  // title이 없으면 기본 테마 반환
+  if (!title) {
+    return themes[0];
+  }
   
   // 간단한 해시 함수로 책 제목에 따라 일관된 색상 선택
   let hash = 0;

@@ -5,56 +5,79 @@ import { getToken, setToken, removeToken, getAuthHeaders } from "@/lib/auth";
 import { fetchAPI } from "@/lib/api-helper";
 
 export function useAuth() {
-  const { data: user, isLoading, error } = useQuery<User>({
+  // 임시로 모든 API 호출을 건너뛰고 가짜 데이터 반환
+  const MOCK_AUTH = false; // false로 변경하여 실제 인증 사용
+  
+  if (MOCK_AUTH) {
+    console.log("[useAuth] MOCK MODE - Returning fake user");
+    const mockUser = {
+      id: 1,
+      email: "test@test.com",
+      nickname: "테스트사용자",
+      bio: "테스트 계정",
+      profileImage: null
+    } as User;
+    
+    return {
+      user: mockUser,
+      isLoading: false,
+      isAuthenticated: true,
+      error: null
+    };
+  }
+  
+  // 원래 코드 
+  const { data: user = null, isLoading = false, error } = useQuery<User | null>({
     queryKey: ["/api/auth/me"],
     queryFn: async () => {
+      console.log("[useAuth] Fetching user...");
       try {
-        const token = getToken();
-        const headers: HeadersInit = {
-          "Content-Type": "application/json",
-        };
-        
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
-        
+        // Vite 프록시 사용 (원래대로)
         const response = await fetch("/api/auth/me", {
           method: "GET",
           credentials: "include",
-          headers,
+          headers: {
+            "Content-Type": "application/json",
+          },
         });
         
+        console.log("[useAuth] Response status:", response.status);
+        
         if (!response.ok) {
+          // 401은 정상적인 "로그인 안됨" 상태
           if (response.status === 401) {
-            // 401 에러 시 JWT 토큰만 삭제
-            removeToken();
+            console.log("[useAuth] Not authenticated (401)");
+            return null;
           }
-          throw new Error('Not authenticated');
+          throw new Error('Server error');
         }
         
         const data = await response.json();
+        console.log("[useAuth] User data:", data.user);
         return data.user;
-      } catch (error) {
-        // 에러 발생 시에도 JWT 토큰만 삭제
-        removeToken();
-        throw new Error('Not authenticated');
+      } catch (err) {
+        console.error("[useAuth] Error:", err);
+        return null;
       }
     },
     retry: false,
-    staleTime: 0,
-    refetchOnWindowFocus: false,  // 401 에러 시 무한 요청 방지
-    refetchOnMount: false,  // 마운트 시 재요청 방지
-    refetchInterval: false,
+    staleTime: 60 * 60 * 1000, // 60분간 캐시 유지
+    gcTime: 2 * 60 * 60 * 1000, // 2시간 캐시 보관
+    refetchOnWindowFocus: false, // 창 포커스시 재요청 안함
+    refetchOnMount: false, // 마운트시 재요청 안함  
+    refetchOnReconnect: false, // 재연결시 재요청 안함
+    enabled: true,
   });
 
-  const isAuthenticated = !!user && !error;
-  console.log("useAuth:", { user: user?.nickname, isLoading, error: error?.message, isAuthenticated });
-
+  const isAuthenticated = !!user;
+  
+  console.log("[useAuth] Return values:", { user, isLoading, isAuthenticated });
+  
   return {
-    user,
+    user: user || null,
     isLoading,
     isAuthenticated,
-    error,
+    error: null, // 401은 에러가 아님
   };
 }
 
@@ -161,64 +184,69 @@ export function useLogout() {
   
   return useMutation({
     mutationFn: async () => {
-      console.log("[Logout] Starting logout process...");
+      console.log("[Logout] Starting unified logout process...");
       
-      // 브라우저 및 환경 감지
-      const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
-      const isProduction = window.location.hostname.includes('vercel.app');
-      console.log("[Logout] Environment:", { isChrome, isProduction, host: window.location.hostname });
+      // 1. 모든 인증 관련 토큰 제거
+      const authKeys = [
+        'auth_token', 'jwt', 'token', 'accessToken', 'refreshToken',
+        'supabase.auth.token', 'google_auth_token', 'session_token'
+      ];
       
-      // 1. JWT 토큰 제거
-      removeToken();
-      console.log("[Logout] JWT token removed");
+      authKeys.forEach(key => {
+        try {
+          localStorage.removeItem(key);
+        } catch (e) {
+          console.warn(`Failed to remove ${key}:`, e);
+        }
+      });
       
-      // 2. 모든 스토리지 클리어
+      // 세션 스토리지도 완전히 정리
       sessionStorage.clear();
-      localStorage.clear();
       
-      // 3. 쿼리 캐시 즉시 클리어 (mutationFn 내부에서 처리)
+      console.log("[Logout] All tokens removed");
+      
+      // 2. 쿼리 캐시 완전 정리
       queryClient.clear();
       queryClient.removeQueries();
       queryClient.cancelQueries();
       queryClient.setQueryData(["/api/auth/me"], null);
       console.log("[Logout] Query cache cleared");
       
-      // 4. 서버 세션 파괴 (실패해도 진행)
+      // 3. 모든 쿠키 강제 삭제
+      document.cookie.split(";").forEach(cookie => {
+        const eqPos = cookie.indexOf("=");
+        const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+        if (name) {
+          // 다양한 도메인과 경로 조합으로 쿠키 삭제 시도
+          const domains = ['', window.location.hostname, `.${window.location.hostname}`];
+          const paths = ['/', '/api', '/auth'];
+          
+          domains.forEach(domain => {
+            paths.forEach(path => {
+              document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=${path};${domain ? `domain=${domain};` : ''}`;
+              document.cookie = `${name}=;Max-Age=0;path=${path};${domain ? `domain=${domain};` : ''}`;
+            });
+          });
+        }
+      });
+      console.log("[Logout] All cookies cleared");
+      
+      // 4. 서버 세션 파괴 (동기적으로 처리)
       try {
-        const response = await fetch("/api/auth/logout", {
+        await fetch("/api/auth/logout", {
           method: "POST",
           credentials: "include",
           headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
           }
         });
-        
-        if (response.ok) {
-          console.log("[Logout] Server session destroyed");
-        }
+        console.log("[Logout] Server logout completed");
       } catch (error) {
-        console.warn("[Logout] Server logout error, but proceeding:", error);
+        console.warn("[Logout] Server logout error:", error);
       }
       
-      // 5. 크롬 브라우저 쿠키 강제 삭제
-      if (isChrome) {
-        const cookieNames = ['sessionId', 'connect.sid', 'jwt', 'auth-token'];
-        const domains = ['', '.vercel.app', `.${window.location.hostname}`, window.location.hostname];
-        
-        cookieNames.forEach(name => {
-          domains.forEach(domain => {
-            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; ${domain ? `domain=${domain};` : ''}`;
-            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; ${domain ? `domain=${domain};` : ''} secure; samesite=none`;
-            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; ${domain ? `domain=${domain};` : ''} secure; samesite=lax`;
-            document.cookie = `${name}=; Max-Age=0; path=/; ${domain ? `domain=${domain};` : ''}`;
-          });
-        });
-        console.log("[Logout] Chrome: Cookies force deleted");
-      }
-      
-      // 6. 브라우저 캐시 삭제
+      // 5. 브라우저 캐시 정리
       if ('caches' in window) {
         try {
           const names = await caches.keys();
@@ -232,12 +260,15 @@ export function useLogout() {
       return { success: true };
     },
     onSuccess: () => {
-      console.log("[Logout] Performing complete page replacement...");
-      
-      // 완전한 페이지 교체로 모든 JavaScript 상태 초기화
-      // replace를 사용하여 히스토리 스택에서도 제거
-      window.location.replace(window.location.origin);
+      console.log("[Logout] Redirecting to home...");
+      // 즉시 홈으로 리다이렉트 (replace 사용하여 히스토리에서 제거)
+      window.location.replace('/');
     },
+    onError: (error) => {
+      console.error("[Logout] Error occurred:", error);
+      // 에러가 발생해도 강제로 리다이렉트
+      window.location.replace('/');
+    }
   });
 }
 

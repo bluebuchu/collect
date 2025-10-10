@@ -152,68 +152,88 @@ router.post("/api/auth/login", async (req, res) => {
   }
 });
 
-// Logout
-router.post("/api/auth/logout", (req, res) => {
-  // 디버깅
-  console.log("[Logout] Starting logout process");
+// Logout - 완전한 세션 파괴
+router.post("/api/auth/logout", async (req, res) => {
+  console.log("[Logout] Starting complete logout process");
   console.log("[Logout] Session ID:", req.sessionID);
+  console.log("[Logout] User ID:", req.session?.userId);
   console.log("[Logout] User:", req.session?.user?.email);
   
-  // 세션 파괴 시도
+  // 1. 세션 데이터 완전 삭제
   if (req.session) {
-    req.session.destroy((err) => {
-      if (err) {
-        console.error("[Logout] Session destroy error:", err);
-        // 에러가 있어도 쿠키 삭제 계속
-      }
+    // 세션 데이터 수동 삭제
+    req.session.userId = undefined;
+    req.session.user = undefined;
+    
+    // 세션 완전 파괴 (Promise로 변환)
+    await new Promise<void>((resolve) => {
+      req.session!.destroy((err) => {
+        if (err) {
+          console.error("[Logout] Session destroy error:", err);
+        }
+        resolve();
+      });
     });
   }
   
-  // Vercel 서버리스 환경에서는 세션이 쿠키에 저장되므로
-  // 쿠키를 직접 삭제해야 함
-  const isProduction = process.env.NODE_ENV === 'production';
+  // 2. 모든 가능한 쿠키 이름 삭제
+  const cookieNames = [
+    'sessionId', 
+    'connect.sid', 
+    'jwt', 
+    'auth_token',
+    'auth-token',
+    'session',
+    'sid'
+  ];
   
-  // 가장 단순한 쿠키 삭제
-  res.clearCookie('sessionId');
-  res.clearCookie('connect.sid');
+  // 3. 다양한 방법으로 쿠키 삭제
+  cookieNames.forEach(name => {
+    // 기본 삭제
+    res.clearCookie(name);
+    
+    // 옵션 포함 삭제
+    res.clearCookie(name, { path: '/' });
+    res.clearCookie(name, { path: '/', domain: req.hostname });
+    
+    // 프로덕션 환경 삭제
+    if (process.env.NODE_ENV === 'production') {
+      res.clearCookie(name, {
+        path: '/',
+        httpOnly: true,
+        secure: true,
+        sameSite: 'lax'
+      });
+    }
+  });
   
-  // 프로덕션에서는 명시적 옵션으로도 삭제
-  if (isProduction) {
-    res.clearCookie('sessionId', {
-      path: '/',
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax'
-    });
-    res.clearCookie('connect.sid', {
-      path: '/',
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax'
-    });
-  }
+  // 4. Set-Cookie 헤더로 강제 삭제
+  const setCookieHeaders = cookieNames.map(name => 
+    `${name}=; Max-Age=0; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
+  );
+  res.setHeader('Set-Cookie', setCookieHeaders);
   
-  // 추가로 Set-Cookie 헤더 강제 설정
-  res.setHeader('Set-Cookie', [
-    'sessionId=; Max-Age=0; Path=/; HttpOnly',
-    'connect.sid=; Max-Age=0; Path=/; HttpOnly'
-  ]);
+  // 5. 캐시 방지 헤더
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   
-  console.log("[Logout] Cookies cleared");
+  console.log("[Logout] Complete - all sessions and cookies cleared");
   
-  // 클라이언트에 성공 응답
-  res.json({ 
+  // 6. 성공 응답
+  res.status(200).json({ 
+    success: true,
     message: "로그아웃되었습니다", 
     cleared: true,
-    requireReload: true // 클라이언트에 리로드 필요 알림
+    requireReload: true
   });
 });
 
-// Get current user - now supports both JWT and session
-router.get("/api/auth/me", jwtAuthMiddleware, authMiddleware, async (req: AuthRequest, res) => {
+// Get current user - session-based authentication only
+router.get("/api/auth/me", authMiddleware, async (req: AuthRequest, res) => {
   try {
-    // Check JWT first, then session
-    const userId = req.user?.id || req.session?.userId;
+    // Use session-based authentication only
+    const userId = req.session?.userId;
     
     if (!userId) {
       return res.status(401).json({ error: "인증이 필요합니다" });
@@ -221,6 +241,11 @@ router.get("/api/auth/me", jwtAuthMiddleware, authMiddleware, async (req: AuthRe
 
     const user = await storage.getUserById(userId);
     if (!user) {
+      // Clear invalid session
+      if (req.session) {
+        req.session.userId = undefined;
+        req.session.user = undefined;
+      }
       return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
     }
 
@@ -369,18 +394,26 @@ router.get("/api/auth/google",
 
 router.get("/api/auth/google/callback",
   passport.authenticate('google', { 
-    failureRedirect: '/?error=google_auth_failed&reason=redirect_uri_mismatch' 
+    failureRedirect: process.env.NODE_ENV === 'development' 
+      ? 'http://localhost:5173/?error=google_auth_failed&reason=redirect_uri_mismatch'
+      : '/?error=google_auth_failed&reason=redirect_uri_mismatch' 
   }),
   async (req: any, res) => {
     // 구글 로그인 성공 후 세션에 사용자 정보 저장
     if (req.user) {
       req.session.userId = req.user.id;
       req.session.user = req.user;
-      // 성공 메시지와 함께 리디렉션
-      res.redirect('/?success=google_login');
+      // 개발 환경에서는 Vite 개발 서버로 리디렉션
+      const redirectUrl = process.env.NODE_ENV === 'development' 
+        ? 'http://localhost:5173/?success=google_login'
+        : '/?success=google_login';
+      res.redirect(redirectUrl);
     } else {
       // 사용자 정보가 없는 경우
-      res.redirect('/?error=google_auth_failed');
+      const redirectUrl = process.env.NODE_ENV === 'development'
+        ? 'http://localhost:5173/?error=google_auth_failed'
+        : '/?error=google_auth_failed';
+      res.redirect(redirectUrl);
     }
   }
 );

@@ -306,13 +306,14 @@ export default function CommunityDetailPage() {
           </Card>
         </div>
 
-        {/* Book Club Section */}
+        {/* Book Club Section - 임시 비활성화 (데이터베이스 테이블 생성 필요) */}
+        {false && (
         <Card className="border-0 shadow-lg bg-gradient-to-r from-purple-50 to-blue-50 dark:from-gray-800 dark:to-gray-900 mb-6">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Book className="h-6 w-6 text-purple-600" />
-                <CardTitle className="text-xl">함께 책읽기</CardTitle>
+                <CardTitle className="text-xl">함께 책읽기 (북클럽)</CardTitle>
               </div>
               <Button
                 onClick={() => {
@@ -348,6 +349,7 @@ export default function CommunityDetailPage() {
             </div>
           </CardContent>
         </Card>
+        )}
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">

@@ -7,17 +7,17 @@
 /* Custom Font Families */
 @layer base {
   body {
-    font-family: 'ChosunilboNM', 'Georgia', serif;
+    font-family: 'Noto Serif KR', 'Georgia', serif;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
   }
   
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'ChosunilboNM', 'Merriweather', serif;
+    font-family: 'Noto Serif KR', 'Merriweather', serif;
   }
   
   .font-display {
-    font-family: 'ChosunilboNM', 'Merriweather', serif !important;
+    font-family: 'Noto Serif KR', 'Merriweather', serif !important;
   }
   
   .font-serif {

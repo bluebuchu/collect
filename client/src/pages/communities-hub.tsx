@@ -271,7 +271,15 @@ export default function CommunitiesHub() {
       return pages.length * COMMUNITIES_PER_PAGE;
     },
     initialPageParam: 0,
-    enabled: activeTab === "communities",
+    enabled: true, // 활성화
+    // React Query 캐시 설정 추가
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5분간 캐시 유지
+    gcTime: 10 * 60 * 1000, // 10분간 캐시 보관
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    refetchInterval: false,
   });
 
   const communities = data?.pages.flat() || [];

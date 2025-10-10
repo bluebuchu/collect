@@ -57,6 +57,11 @@ export default function CreateCommunityModal({ open, onClose }: CreateCommunityM
       });
       onClose();
       resetForm();
+      
+      // 페이지 새로고침으로 확실하게 데이터 갱신
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     },
     onError: (error: any) => {
       toast({
