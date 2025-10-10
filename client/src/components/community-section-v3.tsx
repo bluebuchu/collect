@@ -122,9 +122,9 @@ export default function CommunitySectionV3() {
             </CardTitle>
             {community.category && (
               <Badge variant="secondary" className="mt-1">
-                {community.category === "book" ? "📚 책" : 
-                 community.category === "author" ? "✍️ 작가" :
-                 community.category === "genre" ? "🎭 장르" : "📝 일반"}
+                {community.category === "book" ? "책" : 
+                 community.category === "author" ? "작가" :
+                 community.category === "genre" ? "장르" : "일반"}
               </Badge>
             )}
           </div>

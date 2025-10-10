@@ -62,7 +62,7 @@ export default function BookClubsList() {
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2">📚 함께 책읽기</h1>
+            <h1 className="text-3xl font-bold mb-2">함께 책읽기</h1>
             <p className="text-muted-foreground">
               커뮤니티 멤버들과 함께 책을 읽고 감상을 나누세요
             </p>

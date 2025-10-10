@@ -102,7 +102,7 @@ export default function CreateBookClubModal({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">📚 새 북클럽 만들기</DialogTitle>
+          <DialogTitle className="text-2xl font-bold">새 북클럽 만들기</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6 mt-6">

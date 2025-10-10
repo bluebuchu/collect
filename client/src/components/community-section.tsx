@@ -157,7 +157,7 @@ export default function CommunitySection() {
                     </div>
                     {sentence.bookTitle && (
                       <p className="text-xs text-muted-foreground truncate">
-                        📚 {sentence.bookTitle}
+                        {sentence.bookTitle}
                       </p>
                     )}
                   </div>
