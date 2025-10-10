@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Plus, BookOpen, Users, Calendar } from "lucide-react";
+import { Plus, BookOpen, Users, Calendar, Home, ArrowLeft } from "lucide-react";
 import BookClubCard from "@/components/book-club-card";
 import CreateBookClubModal from "@/components/create-book-club-modal";
 import { useToast } from "@/hooks/use-toast";
@@ -11,6 +11,7 @@ import { type BookClubWithDetails } from "@shared/schema";
 
 export default function BookClubsList() {
   const { communityId } = useParams();
+  const [, setLocation] = useLocation();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -58,6 +59,18 @@ export default function BookClubsList() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Navigation */}
+      <div className="flex gap-2 mb-6">
+        <Button variant="ghost" onClick={() => setLocation("/")} size="sm">
+          <Home className="w-4 h-4 mr-2" />
+          홈
+        </Button>
+        <Button variant="ghost" onClick={() => setLocation(`/communities/${communityId}`)} size="sm">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          커뮤니티로
+        </Button>
+      </div>
+
       {/* Header */}
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">

@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   ArrowLeft, BookOpen, Users, Calendar, Trophy, 
-  Target, Clock, Edit, UserMinus 
+  Target, Clock, Edit, UserMinus, Home 
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -133,14 +133,24 @@ export default function BookClubDetail() {
       {/* Header */}
       <div className="border-b">
         <div className="container mx-auto px-4 py-6">
-          <Button
-            variant="ghost"
-            onClick={() => setLocation(`/communities/${bookClub.community.id}/book-clubs`)}
-            className="mb-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            북클럽 목록으로
-          </Button>
+          <div className="flex gap-2 mb-4">
+            <Button
+              variant="ghost"
+              onClick={() => setLocation("/")}
+              size="sm"
+            >
+              <Home className="w-4 h-4 mr-2" />
+              홈
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => setLocation(`/communities/${bookClub.community.id}/book-clubs`)}
+              size="sm"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              북클럽 목록으로
+            </Button>
+          </div>
 
           <div className="flex flex-col md:flex-row gap-6">
             {/* Book Cover */}
