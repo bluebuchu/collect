@@ -173,8 +173,8 @@ export default function Home() {
               <ThemeToggle />
               <Button
                 onClick={async () => {
-                  // 1. 즉시 모든 스토리지 클리어
-                  localStorage.clear();
+                  // 1. JWT 토큰만 선택적으로 제거 (다른 localStorage 항목은 유지)
+                  localStorage.removeItem('auth_token');
                   sessionStorage.clear();
                   
                   // 2. 서버에 로그아웃 요청 (에러 무시)
