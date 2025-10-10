@@ -52,7 +52,7 @@ export default function Home() {
       setIsGlassmorphismOpen(true);
       sessionStorage.setItem('hasShownDailySentence', 'true');
     }
-  }, []); // Empty dependency array - only runs once on mount
+  }, [user, googleUser, isAuthenticated, isGoogleAuthenticated]); // Watch auth state changes
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "likes" | "length" | "page-asc" | "page-desc">("newest");
