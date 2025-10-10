@@ -146,7 +146,7 @@ export const insertSentenceSchema = createInsertSchema(sentences).omit({
   updatedAt: true,
 }).extend({
   content: z.string()
-    .min(10, "문장은 최소 10자 이상이어야 합니다")
+    .min(1, "문장을 입력해주세요")
     .max(500, "문장은 500자 이하여야 합니다")
     .trim(),
   bookTitle: z.string().max(255, "책 제목은 255자 이하여야 합니다").optional(),
@@ -167,7 +167,7 @@ export const updateSentenceSchema = createInsertSchema(sentences).omit({
   updatedAt: true,
 }).extend({
   content: z.string()
-    .min(10, "문장은 최소 10자 이상이어야 합니다")
+    .min(1, "문장을 입력해주세요")
     .max(500, "문장은 500자 이하여야 합니다")
     .trim()
     .optional(),
