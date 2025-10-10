@@ -307,38 +307,47 @@ export default function CommunityDetailPage() {
         </div>
 
         {/* Book Club Section */}
-        {community.isMember && (
-          <Card className="border-0 shadow-lg bg-gradient-to-r from-purple-50 to-blue-50 dark:from-gray-800 dark:to-gray-900 mb-6">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Book className="h-6 w-6 text-purple-600" />
-                  <CardTitle className="text-xl">📚 함께 책읽기</CardTitle>
-                </div>
-                <Button
-                  onClick={() => setLocation(`/communities/${id}/book-clubs`)}
-                  className="gap-2"
-                >
-                  북클럽 보기
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
+        <Card className="border-0 shadow-lg bg-gradient-to-r from-purple-50 to-blue-50 dark:from-gray-800 dark:to-gray-900 mb-6">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Book className="h-6 w-6 text-purple-600" />
+                <CardTitle className="text-xl">함께 책읽기</CardTitle>
               </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                커뮤니티 멤버들과 함께 책을 읽고 감상을 나누세요
-              </p>
-              <div className="flex gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">진행 중 0개</Badge>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline">예정 0개</Badge>
-                </div>
+              <Button
+                onClick={() => {
+                  if (community.isMember) {
+                    setLocation(`/communities/${id}/book-clubs`);
+                  } else {
+                    toast({
+                      title: "가입 필요",
+                      description: "북클럽은 커뮤니티 멤버만 이용할 수 있습니다.",
+                      variant: "destructive"
+                    });
+                  }
+                }}
+                className="gap-2"
+                variant={community.isMember ? "default" : "secondary"}
+              >
+                {community.isMember ? "북클럽 보기" : "가입 후 이용"}
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              커뮤니티 멤버들과 함께 책을 읽고 감상을 나누세요
+            </p>
+            <div className="flex gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">진행 중 0개</Badge>
               </div>
-            </CardContent>
-          </Card>
-        )}
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">예정 0개</Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
