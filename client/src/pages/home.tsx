@@ -173,19 +173,22 @@ export default function Home() {
               <ThemeToggle />
               <Button
                 onClick={async () => {
-                  // 모든 인증 시스템에서 로그아웃
-                  if (isGoogleAuthenticated && googleSignOut) {
-                    await googleSignOut();
+                  // 1. 즉시 모든 스토리지 클리어
+                  localStorage.clear();
+                  sessionStorage.clear();
+                  
+                  // 2. 서버에 로그아웃 요청 (에러 무시)
+                  try {
+                    await fetch("/api/auth/logout", {
+                      method: "POST",
+                      credentials: "include"
+                    });
+                  } catch (e) {
+                    console.log("Server logout error:", e);
                   }
-                  if (isSupabaseAuthenticated && supabaseSignOut) {
-                    await supabaseSignOut();
-                  }
-                  if (isAuthenticated) {
-                    logoutMutation.mutate();
-                  } else {
-                    // JWT 인증이 없는 경우에도 강제 리다이렉트
-                    window.location.replace("/");
-                  }
+                  
+                  // 3. 즉시 페이지 완전 리로드
+                  window.location.href = "/";
                 }}
                 variant="ghost"
                 size="icon"

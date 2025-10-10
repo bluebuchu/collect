@@ -174,11 +174,16 @@ export function useLogout() {
       
       // 2. 모든 스토리지 클리어
       sessionStorage.clear();
-      localStorage.clear(); // 프로덕션에서는 완전 클리어
+      localStorage.clear();
       
-      console.log("[Logout] Storage cleared completely");
+      // 3. 쿼리 캐시 즉시 클리어 (mutationFn 내부에서 처리)
+      queryClient.clear();
+      queryClient.removeQueries();
+      queryClient.cancelQueries();
+      queryClient.setQueryData(["/api/auth/me"], null);
+      console.log("[Logout] Query cache cleared");
       
-      // 3. 서버 세션 파괴
+      // 4. 서버 세션 파괴 (실패해도 진행)
       try {
         const response = await fetch("/api/auth/logout", {
           method: "POST",
@@ -186,75 +191,52 @@ export function useLogout() {
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Pragma': 'no-cache',
-            'Expires': '0',
-            // Chrome과 프로덕션 정보 전달
-            ...(isChrome && { 'X-Chrome-Logout': 'true' }),
-            ...(isProduction && { 'X-Production-Logout': 'true' })
+            'Expires': '0'
           }
         });
         
-        const result = await response.json();
-        console.log("[Logout] Server response:", result);
-        
-        if (!response.ok) {
-          console.warn("[Logout] Session logout failed, but proceeding with client cleanup");
+        if (response.ok) {
+          console.log("[Logout] Server session destroyed");
         }
       } catch (error) {
-        console.warn("[Logout] Session logout error, but proceeding:", error);
+        console.warn("[Logout] Server logout error, but proceeding:", error);
       }
       
-      // Chrome + 프로덕션 특별 처리
-      if (isChrome && isProduction) {
-        // 쿠키 강제 삭제 시도 (여러 도메인 조합)
-        const cookieNames = ['sessionId', 'connect.sid'];
-        const domains = ['', '.vercel.app', `.${window.location.hostname}`];
+      // 5. 크롬 브라우저 쿠키 강제 삭제
+      if (isChrome) {
+        const cookieNames = ['sessionId', 'connect.sid', 'jwt', 'auth-token'];
+        const domains = ['', '.vercel.app', `.${window.location.hostname}`, window.location.hostname];
         
         cookieNames.forEach(name => {
           domains.forEach(domain => {
-            // 과거 날짜로 설정하여 쿠키 삭제
             document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; ${domain ? `domain=${domain};` : ''}`;
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; ${domain ? `domain=${domain};` : ''} secure; samesite=none`;
             document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; ${domain ? `domain=${domain};` : ''} secure; samesite=lax`;
+            document.cookie = `${name}=; Max-Age=0; path=/; ${domain ? `domain=${domain};` : ''}`;
           });
         });
-        
-        console.log("[Logout] Chrome production: Forced cookie deletion attempted");
+        console.log("[Logout] Chrome: Cookies force deleted");
+      }
+      
+      // 6. 브라우저 캐시 삭제
+      if ('caches' in window) {
+        try {
+          const names = await caches.keys();
+          await Promise.all(names.map(name => caches.delete(name)));
+          console.log("[Logout] Browser caches cleared");
+        } catch (e) {
+          console.warn("[Logout] Cache clear error:", e);
+        }
       }
       
       return { success: true };
     },
     onSuccess: () => {
-      console.log("[Logout] Clearing query cache...");
+      console.log("[Logout] Performing complete page replacement...");
       
-      // 쿼리 캐시 완전 초기화
-      queryClient.clear();
-      queryClient.removeQueries();
-      queryClient.cancelQueries();
-      
-      // 브라우저 캐시도 초기화 시도
-      if ('caches' in window) {
-        caches.keys().then(names => {
-          names.forEach(name => caches.delete(name));
-        });
-      }
-      
-      console.log("[Logout] Performing hard reload...");
-      
-      // Vercel 프로덕션에서 확실한 로그아웃을 위한 하드 리로드
-      // 모든 JavaScript 상태와 메모리를 완전히 초기화
-      const isProduction = window.location.hostname.includes('vercel.app');
-      
-      if (isProduction) {
-        // 프로덕션: 즉시 하드 리로드
-        window.location.href = window.location.origin + '/?logout=true&t=' + Date.now();
-      } else {
-        // 로컬 개발: 기존 방식
-        setTimeout(() => {
-          window.location.href = "/";
-          setTimeout(() => {
-            window.location.reload(true);
-          }, 50);
-        }, 100);
-      }
+      // 완전한 페이지 교체로 모든 JavaScript 상태 초기화
+      // replace를 사용하여 히스토리 스택에서도 제거
+      window.location.replace(window.location.origin);
     },
   });
 }

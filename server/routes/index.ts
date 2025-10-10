@@ -6,6 +6,7 @@ import booksRoutes from "./books.routes";
 import communitiesRoutes from "./communities.routes";
 import exportRoutes from "./export.routes";
 import adminRoutes from "./admin.routes";
+import bookClubsRoutes from "./book-clubs.routes";
 import { authMiddleware } from "../auth";
 
 export function registerRoutes(app: Express) {
@@ -18,6 +19,7 @@ export function registerRoutes(app: Express) {
   app.use(userRoutes);
   app.use(booksRoutes);
   app.use(communitiesRoutes);
+  app.use(bookClubsRoutes);
   app.use("/api", exportRoutes);
   app.use(adminRoutes);
   

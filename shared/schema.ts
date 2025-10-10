@@ -268,3 +268,115 @@ export type CommunityWithStats = Community & {
   isMember?: boolean;
   memberRole?: string;
 };
+
+// ============= Book Club Tables =============
+
+// Book clubs table
+export const bookClubs = pgTable("book_clubs", {
+  id: serial("id").primaryKey(),
+  communityId: integer("community_id").references(() => communities.id).notNull(),
+  bookTitle: varchar("book_title", { length: 255 }).notNull(),
+  bookAuthor: varchar("book_author", { length: 255 }).notNull(),
+  bookCover: text("book_cover"),
+  totalPages: integer("total_pages").notNull(),
+  currentChapter: integer("current_chapter").default(1),
+  totalChapters: integer("total_chapters"),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  createdBy: integer("created_by").references(() => users.id).notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("upcoming"), // upcoming, active, completed
+  description: text("description"),
+  maxMembers: integer("max_members").default(50),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Book club members table
+export const bookClubMembers = pgTable("book_club_members", {
+  id: serial("id").primaryKey(),
+  bookClubId: integer("book_club_id").references(() => bookClubs.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  currentPage: integer("current_page").default(0),
+  lastReadAt: timestamp("last_read_at"),
+  role: varchar("role", { length: 20 }).notNull().default("member"), // leader, member
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+});
+
+// Book club sentences - sentences linked to book clubs
+export const bookClubSentences = pgTable("book_club_sentences", {
+  id: serial("id").primaryKey(),
+  bookClubId: integer("book_club_id").references(() => bookClubs.id).notNull(),
+  sentenceId: integer("sentence_id").references(() => sentences.id).notNull(),
+  chapterNum: integer("chapter_num"),
+  pageNum: integer("page_num"),
+  addedAt: timestamp("added_at").defaultNow().notNull(),
+});
+
+// Book club progress milestones
+export const bookClubMilestones = pgTable("book_club_milestones", {
+  id: serial("id").primaryKey(),
+  bookClubId: integer("book_club_id").references(() => bookClubs.id).notNull(),
+  weekNumber: integer("week_number").notNull(),
+  chapterStart: integer("chapter_start").notNull(),
+  chapterEnd: integer("chapter_end").notNull(),
+  targetDate: timestamp("target_date").notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("pending"), // pending, active, completed
+});
+
+// ============= Book Club Schemas =============
+
+// Create book club schema
+export const createBookClubSchema = z.object({
+  communityId: z.number().min(1),
+  bookTitle: z.string().min(1, "책 제목을 입력해주세요").max(255),
+  bookAuthor: z.string().min(1, "저자를 입력해주세요").max(255),
+  bookCover: z.string().url().optional(),
+  totalPages: z.number().min(1, "총 페이지 수를 입력해주세요"),
+  totalChapters: z.number().optional(),
+  startDate: z.string().or(z.date()),
+  endDate: z.string().or(z.date()),
+  description: z.string().max(1000).optional(),
+  maxMembers: z.number().min(2).max(100).optional(),
+});
+
+// Update book club schema
+export const updateBookClubSchema = z.object({
+  description: z.string().max(1000).optional(),
+  maxMembers: z.number().min(2).max(100).optional(),
+  status: z.enum(["upcoming", "active", "completed"]).optional(),
+});
+
+// Join book club schema
+export const joinBookClubSchema = z.object({
+  bookClubId: z.number().min(1),
+});
+
+// Update progress schema
+export const updateProgressSchema = z.object({
+  currentPage: z.number().min(0),
+});
+
+// ============= Book Club Types =============
+
+export type BookClub = typeof bookClubs.$inferSelect;
+export type InsertBookClub = z.infer<typeof createBookClubSchema>;
+export type UpdateBookClub = z.infer<typeof updateBookClubSchema>;
+export type BookClubMember = typeof bookClubMembers.$inferSelect;
+export type BookClubSentence = typeof bookClubSentences.$inferSelect;
+export type BookClubMilestone = typeof bookClubMilestones.$inferSelect;
+
+export type BookClubWithDetails = BookClub & {
+  creator: {
+    id: number;
+    nickname: string;
+    profileImage: string | null;
+  };
+  community: {
+    id: number;
+    name: string;
+  };
+  memberCount: number;
+  currentUserProgress?: number;
+  isJoined?: boolean;
+  averageProgress?: number;
+};

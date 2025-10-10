@@ -15,6 +15,8 @@ import AdminPage from "@/pages/admin";
 import ResetPasswordPage from "@/pages/reset-password";
 import AuthCallback from "@/pages/auth-callback";
 import NotFound from "@/pages/not-found";
+import BookClubsList from "@/pages/book-clubs/book-clubs-list";
+import BookClubDetail from "@/pages/book-clubs/book-club-detail";
 import { useAuth } from "@/hooks/useAuth";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
@@ -67,6 +69,8 @@ function Router() {
           <Route path="/communities" component={CommunitiesHub} />
           <Route path="/community" component={CommunitiesHub} />
           <Route path="/community/:id" component={CommunityDetail} />
+          <Route path="/communities/:communityId/book-clubs" component={BookClubsList} />
+          <Route path="/book-clubs/:id" component={BookClubDetail} />
           <Route path="/books" component={BooksPage} />
           <Route path="/books/:bookTitle" component={BookDetailPage} />
           <Route path="/admin" component={AdminPage} />
@@ -77,6 +81,8 @@ function Router() {
           <Route path="/communities" component={CommunitiesHub} />
           <Route path="/community" component={CommunitiesHub} />
           <Route path="/community/:id" component={CommunityDetail} />
+          <Route path="/communities/:communityId/book-clubs" component={BookClubsList} />
+          <Route path="/book-clubs/:id" component={BookClubDetail} />
           <Route path="/books" component={BooksPage} />
           <Route path="/books/:bookTitle" component={BookDetailPage} />
           <Route path="/admin" component={AdminPage} />
