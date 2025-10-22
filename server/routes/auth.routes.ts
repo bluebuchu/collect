@@ -395,24 +395,37 @@ router.get("/api/auth/google",
 router.get("/api/auth/google/callback",
   passport.authenticate('google', { 
     failureRedirect: process.env.NODE_ENV === 'development' 
-      ? 'http://localhost:5173/?error=google_auth_failed&reason=redirect_uri_mismatch'
-      : '/?error=google_auth_failed&reason=redirect_uri_mismatch' 
+      ? 'http://localhost:5173/?error=google_auth_failed&reason=authentication_error'
+      : '/?error=google_auth_failed&reason=authentication_error' 
   }),
   async (req: any, res) => {
     // 구글 로그인 성공 후 세션에 사용자 정보 저장
     if (req.user) {
       req.session.userId = req.user.id;
       req.session.user = req.user;
-      // 개발 환경에서는 Vite 개발 서버로 리디렉션
-      const redirectUrl = process.env.NODE_ENV === 'development' 
-        ? 'http://localhost:5173/?success=google_login'
-        : '/?success=google_login';
-      res.redirect(redirectUrl);
+      
+      console.log('[Google OAuth] Login successful for user:', req.user.email);
+      
+      // 세션 저장 확인
+      req.session.save((err: any) => {
+        if (err) {
+          console.error('[Google OAuth] Session save error:', err);
+        }
+        
+        // 개발 환경에서는 Vite 개발 서버로 리디렉션
+        const redirectUrl = process.env.NODE_ENV === 'development' 
+          ? 'http://localhost:5173/?success=google_login'
+          : '/?success=google_login';
+        
+        console.log('[Google OAuth] Redirecting to:', redirectUrl);
+        res.redirect(redirectUrl);
+      });
     } else {
       // 사용자 정보가 없는 경우
+      console.error('[Google OAuth] No user data after authentication');
       const redirectUrl = process.env.NODE_ENV === 'development'
-        ? 'http://localhost:5173/?error=google_auth_failed'
-        : '/?error=google_auth_failed';
+        ? 'http://localhost:5173/?error=google_auth_failed&reason=no_user_data'
+        : '/?error=google_auth_failed&reason=no_user_data';
       res.redirect(redirectUrl);
     }
   }

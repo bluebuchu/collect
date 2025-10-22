@@ -29,15 +29,15 @@ export function GoogleAuthButton({ className = '', showUserInfo = false }: Googl
       <div className={`flex items-center gap-3 ${className}`}>
         {showUserInfo && (
           <div className="flex items-center gap-2">
-            {user.picture && (
+            {user.profileImage && (
               <img
-                src={user.picture}
-                alt={user.name}
+                src={user.profileImage}
+                alt={user.nickname}
                 className="w-8 h-8 rounded-full object-cover"
               />
             )}
             <div className="text-sm">
-              <div className="font-medium text-gray-900 dark:text-gray-100">{user.name}</div>
+              <div className="font-medium text-gray-900 dark:text-gray-100">{user.nickname}</div>
               <div className="text-gray-600 dark:text-gray-400">{user.email}</div>
             </div>
           </div>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google OAuth Test</title>
+    <style>
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .test-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #495057;
+        }
+        button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #357ae8;
+        }
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Google OAuth 로그인 테스트</h1>
+
+        <!-- Test 1: Check OAuth Status -->
+        <div class="test-section">
+            <div class="test-title">1️⃣ OAuth 상태 확인</div>
+            <button onclick="checkOAuthStatus()">OAuth 상태 확인</button>
+            <div id="oauth-status" class="status"></div>
+        </div>
+
+        <!-- Test 2: Direct OAuth Test -->
+        <div class="test-section">
+            <div class="test-title">2️⃣ Google OAuth 직접 테스트</div>
+            <button onclick="testDirectOAuth()">Google로 로그인 (서버 경유)</button>
+            <div id="direct-oauth" class="status"></div>
+        </div>
+
+        <!-- Test 3: Check Current Session -->
+        <div class="test-section">
+            <div class="test-title">3️⃣ 현재 세션 확인</div>
+            <button onclick="checkSession()">세션 상태 확인</button>
+            <div id="session-status" class="status"></div>
+        </div>
+
+        <!-- Test 4: Regular Login -->
+        <div class="test-section">
+            <div class="test-title">4️⃣ 일반 로그인 테스트</div>
+            <input type="email" id="email" placeholder="이메일" style="padding: 8px; margin-right: 10px;">
+            <input type="password" id="password" placeholder="비밀번호" style="padding: 8px; margin-right: 10px;">
+            <button onclick="testRegularLogin()">일반 로그인</button>
+            <div id="regular-login" class="status"></div>
+        </div>
+
+        <!-- Test 5: API Endpoints -->
+        <div class="test-section">
+            <div class="test-title">5️⃣ API 엔드포인트 테스트</div>
+            <button onclick="testEndpoints()">모든 엔드포인트 테스트</button>
+            <div id="endpoints" class="status"></div>
+        </div>
+    </div>
+
+    <script>
+        // Check OAuth Status
+        async function checkOAuthStatus() {
+            const statusDiv = document.getElementById('oauth-status');
+            try {
+                statusDiv.innerHTML = '<div class="info">확인 중...</div>';
+                const response = await fetch('http://localhost:5000/api/auth/google/status', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                statusDiv.innerHTML = `
+                    <div class="${data.isGoogleOAuthEnabled ? 'success' : 'error'}">
+                        <strong>OAuth 상태:</strong> ${data.isGoogleOAuthEnabled ? '활성화됨 ✅' : '비활성화됨 ❌'}<br>
+                        <strong>호스트:</strong> ${data.currentHost}<br>
+                        ${data.message ? `<strong>메시지:</strong> ${data.message}<br>` : ''}
+                        ${data.user ? `<strong>로그인된 사용자:</strong> ${data.user.email}` : '<strong>로그인된 사용자:</strong> 없음'}
+                    </div>
+                `;
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">오류: ${error.message}</div>`;
+            }
+        }
+
+        // Test Direct OAuth
+        function testDirectOAuth() {
+            const statusDiv = document.getElementById('direct-oauth');
+            statusDiv.innerHTML = '<div class="info">Google OAuth 페이지로 이동합니다...</div>';
+            
+            // Open OAuth in new window to capture result
+            const authWindow = window.open('http://localhost:5000/api/auth/google', 'google-auth', 'width=500,height=600');
+            
+            // Check for result
+            const checkInterval = setInterval(() => {
+                try {
+                    if (authWindow.closed) {
+                        clearInterval(checkInterval);
+                        statusDiv.innerHTML += '<div class="info">인증 창이 닫혔습니다. 세션을 확인하세요.</div>';
+                        checkSession();
+                    }
+                } catch (e) {
+                    clearInterval(checkInterval);
+                }
+            }, 1000);
+        }
+
+        // Check Session
+        async function checkSession() {
+            const statusDiv = document.getElementById('session-status');
+            try {
+                statusDiv.innerHTML = '<div class="info">확인 중...</div>';
+                const response = await fetch('http://localhost:5000/api/auth/me', {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    statusDiv.innerHTML = `
+                        <div class="success">
+                            <strong>로그인 상태:</strong> 로그인됨 ✅<br>
+                            <strong>사용자 ID:</strong> ${data.user.id}<br>
+                            <strong>이메일:</strong> ${data.user.email}<br>
+                            <strong>닉네임:</strong> ${data.user.nickname}
+                        </div>
+                    `;
+                } else {
+                    const error = await response.json();
+                    statusDiv.innerHTML = `<div class="error">로그인되지 않음: ${error.error}</div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">오류: ${error.message}</div>`;
+            }
+        }
+
+        // Test Regular Login
+        async function testRegularLogin() {
+            const statusDiv = document.getElementById('regular-login');
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                statusDiv.innerHTML = '<div class="error">이메일과 비밀번호를 입력하세요</div>';
+                return;
+            }
+
+            try {
+                statusDiv.innerHTML = '<div class="info">로그인 중...</div>';
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    statusDiv.innerHTML = `
+                        <div class="success">
+                            <strong>로그인 성공!</strong><br>
+                            <strong>사용자:</strong> ${data.user.email}<br>
+                            <strong>토큰:</strong> ${data.token ? '발급됨' : '없음'}
+                        </div>
+                    `;
+                } else {
+                    statusDiv.innerHTML = `<div class="error">로그인 실패: ${data.error}</div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">오류: ${error.message}</div>`;
+            }
+        }
+
+        // Test All Endpoints
+        async function testEndpoints() {
+            const statusDiv = document.getElementById('endpoints');
+            statusDiv.innerHTML = '<div class="info">테스트 중...</div>';
+            
+            const endpoints = [
+                { url: '/api/auth/google', method: 'HEAD', name: 'Google OAuth Entry' },
+                { url: '/api/auth/google/status', method: 'GET', name: 'Google OAuth Status' },
+                { url: '/api/auth/me', method: 'GET', name: 'Current User' },
+                { url: '/api/books', method: 'GET', name: 'Books List' },
+                { url: '/api/sentences/recent', method: 'GET', name: 'Recent Sentences' }
+            ];
+
+            let results = '<div class="info"><strong>엔드포인트 테스트 결과:</strong><br><br>';
+            
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(`http://localhost:5000${endpoint.url}`, {
+                        method: endpoint.method,
+                        credentials: 'include'
+                    });
+                    
+                    results += `✅ ${endpoint.name}: ${response.status} ${response.statusText}<br>`;
+                } catch (error) {
+                    results += `❌ ${endpoint.name}: ${error.message}<br>`;
+                }
+            }
+            
+            results += '</div>';
+            statusDiv.innerHTML = results;
+        }
+
+        // Check OAuth status on load
+        window.onload = () => {
+            checkOAuthStatus();
+        };
+    </script>
+</body>
+</html>
