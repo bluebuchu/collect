@@ -2,7 +2,8 @@ const TOKEN_KEY = 'auth_token';
 
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem(TOKEN_KEY);
+  // Check for Supabase token first, then fall back to regular auth token
+  return localStorage.getItem('supabase_token') || localStorage.getItem(TOKEN_KEY);
 }
 
 export function setToken(token: string): void {

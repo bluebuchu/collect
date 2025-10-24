@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>로컬 인증 테스트</title>
+    <script>
+        // 1. 로그인 테스트
+        async function testLogin() {
+            console.log('로그인 시도...');
+            const response = await fetch('http://localhost:5000/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    email: 'test@example.com',
+                    password: 'password123'
+                })
+            });
+            
+            const result = await response.json();
+            console.log('로그인 결과:', response.status, result);
+            
+            if (response.ok) {
+                // 세션 확인
+                checkSession();
+            }
+        }
+        
+        // 2. 세션 확인
+        async function checkSession() {
+            console.log('세션 확인...');
+            const response = await fetch('http://localhost:5000/api/auth/me', {
+                credentials: 'include'
+            });
+            
+            const result = await response.json();
+            console.log('세션 상태:', response.status, result);
+        }
+        
+        // 3. 문장 등록 테스트
+        async function testAddSentence() {
+            console.log('문장 등록 시도...');
+            const response = await fetch('http://localhost:5000/api/sentences', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    content: '테스트 문장입니다.',
+                    author: '테스트 작가',
+                    bookTitle: '테스트 책',
+                    page: 100,
+                    isPrivate: false
+                })
+            });
+            
+            const result = await response.text();
+            console.log('문장 등록 결과:', response.status, result);
+        }
+        
+        // 4. Supabase Auth 테스트
+        async function testSupabaseAuth() {
+            console.log('Supabase Auth 테스트...');
+            const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+            
+            const supabaseUrl = 'https://fbvhaeqfylrdhvvdcwzh.supabase.co';
+            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZidmhhZXFmeWxyZGh2dmRjd3poIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyOTA0OTcsImV4cCI6MjA3Njg2NjQ5N30.VOY-V-BG-9OS3n-R-S95kWxIeAGfnPzdPM_62lUJThE';
+            
+            const supabase = createClient(supabaseUrl, supabaseKey);
+            
+            // 현재 세션 확인
+            const { data: { session } } = await supabase.auth.getSession();
+            console.log('Supabase 세션:', session);
+            
+            if (!session) {
+                // 로그인 시도
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: 'test@example.com',
+                    password: 'password123'
+                });
+                
+                if (error) {
+                    console.error('Supabase 로그인 실패:', error);
+                } else {
+                    console.log('Supabase 로그인 성공:', data);
+                    
+                    // JWT 토큰으로 API 호출
+                    if (data.session) {
+                        testWithJWT(data.session.access_token);
+                    }
+                }
+            }
+        }
+        
+        // 5. JWT 토큰으로 테스트
+        async function testWithJWT(token) {
+            console.log('JWT 토큰으로 문장 등록 시도...');
+            const response = await fetch('http://localhost:5000/api/sentences', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    content: 'JWT 테스트 문장입니다.',
+                    author: 'JWT 작가',
+                    bookTitle: 'JWT 책',
+                    page: 200,
+                    isPrivate: false
+                })
+            });
+            
+            const result = await response.text();
+            console.log('JWT 문장 등록 결과:', response.status, result);
+        }
+    </script>
+</head>
+<body>
+    <h1>로컬 인증 테스트</h1>
+    <button onclick="testLogin()">1. 로그인 테스트</button>
+    <button onclick="checkSession()">2. 세션 확인</button>
+    <button onclick="testAddSentence()">3. 문장 등록 (세션)</button>
+    <button onclick="testSupabaseAuth()">4. Supabase Auth</button>
+    
+    <p>콘솔을 열어 결과를 확인하세요.</p>
+</body>
+</html>

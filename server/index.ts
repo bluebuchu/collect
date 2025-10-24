@@ -12,13 +12,32 @@ dotenv.config();
 
 const app = express();
 
-// CORS configuration for development
+// CORS configuration
 app.use((req, res, next) => {
-  const allowedOrigins = ['http://localhost:3000', 'http://localhost:5000'];
+  const allowedOrigins = [
+    'http://localhost:3000', 
+    'http://localhost:5000',
+    'http://localhost:5173', // Vite dev server
+    'https://collect-topaz.vercel.app',
+    'https://collect-*.vercel.app' // Preview deployments
+  ];
+  
   const origin = req.headers.origin;
   
-  if (origin && allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
+  if (origin) {
+    // Check if origin matches allowed origins or patterns
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (allowed.includes('*')) {
+        // Handle wildcard patterns
+        const pattern = allowed.replace('*', '.*');
+        return new RegExp(pattern).test(origin);
+      }
+      return allowed === origin;
+    });
+    
+    if (isAllowed) {
+      res.header('Access-Control-Allow-Origin', origin);
+    }
   }
   
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -36,19 +55,22 @@ app.use(express.urlencoded({ extended: false }));
 
 // Session configuration - using memory store for development
 const isProduction = process.env.NODE_ENV === 'production';
+const isVercel = process.env.VERCEL === '1';
+
 app.use(session({
   secret: process.env.SESSION_SECRET || 'sentence-collection-secret-key-2025',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: isProduction, // HTTPS in production, HTTP in dev
+    secure: isProduction && !isVercel, // Vercel handles HTTPS automatically
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    sameSite: 'lax', // Always use 'lax' for better compatibility
+    sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-domain in production
     // domain 설정 제거 - 브라우저가 자동으로 처리하도록 함
     path: '/'
   },
-  name: 'sessionId'
+  name: 'sessionId',
+  proxy: isVercel // Trust proxy in Vercel environment
 }));
 
 // Passport 초기화
