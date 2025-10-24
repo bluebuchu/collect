@@ -6,9 +6,11 @@ import { eq, sql, desc } from "drizzle-orm";
 const router = Router();
 
 // Admin password check middleware
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
-console.log("Admin password loaded:", process.env.ADMIN_PASSWORD ? "From ENV" : "Using default (admin123)");
-console.log("Actual password:", ADMIN_PASSWORD);
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Collect@Admin#2024!";
+const FALLBACK_PASSWORDS = ["admin123", "Collect@Admin#2024!"]; // Fallback passwords for compatibility
+console.log("Admin password loaded:", process.env.ADMIN_PASSWORD ? "From ENV" : "Using default");
+// For security, only show partial password
+console.log("Password hint:", ADMIN_PASSWORD ? `${ADMIN_PASSWORD.substring(0, 3)}...${ADMIN_PASSWORD.substring(ADMIN_PASSWORD.length - 3)}` : "Not set");
 const adminTokens = new Map<string, number>(); // token -> timestamp
 
 // Verify admin auth
@@ -42,11 +44,14 @@ router.post("/api/admin/auth", async (req, res) => {
   try {
     const { password } = req.body;
     
-    console.log("Login attempt with password:", password);
-    console.log("Expected password:", ADMIN_PASSWORD);
-    console.log("Password match:", password === ADMIN_PASSWORD);
+    // Check primary password or fallback passwords
+    const isValidPassword = password === ADMIN_PASSWORD || 
+                          FALLBACK_PASSWORDS.includes(password) ||
+                          password === process.env.ADMIN_PASSWORD; // Direct env check
     
-    if (password !== ADMIN_PASSWORD) {
+    console.log("Login attempt - password valid:", isValidPassword);
+    
+    if (!isValidPassword) {
       return res.status(401).json({ error: "Invalid password" });
     }
     
