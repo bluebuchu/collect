@@ -201,10 +201,14 @@ export class AuthService {
 export function requireAuth(req: AuthRequest, res: Response, next: NextFunction) {
   // First check JWT token
   const authHeader = req.headers.authorization;
+  console.log('[requireAuth] Authorization header:', authHeader ? 'Present' : 'Missing');
+  console.log('[requireAuth] Session userId:', req.session?.userId);
+  
   if (authHeader && authHeader.startsWith('Bearer ')) {
     try {
       const token = authHeader.substring(7);
       const payload = verifyToken(token);
+      console.log('[requireAuth] JWT verified for user:', payload.userId);
       
       // Set user info from JWT
       req.user = {
@@ -219,15 +223,20 @@ export function requireAuth(req: AuthRequest, res: Response, next: NextFunction)
       
       return next();
     } catch (error) {
-      console.error('JWT verification failed in requireAuth:', error);
+      console.error('[requireAuth] JWT verification failed:', error);
       // Continue to session check if JWT fails
     }
   }
   
   // Fall back to session check
   if (!req.session?.userId) {
-    return res.status(401).json({ message: 'Authentication required' });
+    console.error('[requireAuth] No authentication found - returning 401');
+    return res.status(401).json({ 
+      error: 'Authentication required',
+      message: '인증이 필요합니다. 로그인 해주세요.'
+    });
   }
+  console.log('[requireAuth] Authenticated via session:', req.session.userId);
   next();
 }
 

@@ -6,6 +6,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeGoogleOAuth } from "./auth";
 import { emailService } from "./email";
+import { jwtAuthMiddleware } from "./jwt-auth";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -72,6 +73,9 @@ app.use(session({
   name: 'sessionId',
   proxy: isVercel // Trust proxy in Vercel environment
 }));
+
+// JWT 인증 미들웨어 추가 (session 이전에 실행되도록)
+app.use(jwtAuthMiddleware);
 
 // Passport 초기화
 app.use(passport.initialize());
