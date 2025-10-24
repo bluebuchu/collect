@@ -11,8 +11,8 @@ async function runMigration() {
     host: 'aws-0-ap-northeast-2.pooler.supabase.com',
     port: 6543,
     database: 'postgres',
-    user: 'postgres.khxrgdkgwirkzkfkueka',
-    password: 'ETS9kvBGn0DKq3Qz',
+    user: 'postgres.fbvhaeqfylrdhvvdcwzh',
+    password: 's3DrvDjukytv2AEB',
   });
 
   try {

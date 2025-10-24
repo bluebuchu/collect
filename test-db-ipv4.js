@@ -22,7 +22,7 @@ async function getIPv4Address(hostname) {
 }
 
 async function testConnection() {
-  const hostname = 'db.khxrgdkgwirkzkfkueka.supabase.co';
+  const hostname = 'db.fbvhaeqfylrdhvvdcwzh.supabase.co';
   const ipv4 = await getIPv4Address(hostname);
   
   if (!ipv4) {

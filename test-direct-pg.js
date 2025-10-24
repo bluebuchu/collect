@@ -4,19 +4,19 @@ const { Client } = require('pg');
 const configs = [
   {
     name: "Direct Connection",
-    connectionString: 'postgresql://postgres:ETS9kvBGn0DKq3Qz@db.khxrgdkgwirkzkfkueka.supabase.co:5432/postgres'
+    connectionString: 'postgresql://postgres:s3DrvDjukytv2AEB@db.fbvhaeqfylrdhvvdcwzh.supabase.co:5432/postgres'
   },
   {
     name: "Pooler Connection (5432)",
-    connectionString: 'postgresql://postgres.khxrgdkgwirkzkfkueka:ETS9kvBGn0DKq3Qz@aws-0-ap-northeast-2.pooler.supabase.com:5432/postgres'
+    connectionString: 'postgresql://postgres.fbvhaeqfylrdhvvdcwzh:s3DrvDjukytv2AEB@aws-0-ap-northeast-2.pooler.supabase.com:5432/postgres'
   },
   {
     name: "Pooler Connection (6543)",  
-    connectionString: 'postgresql://postgres.khxrgdkgwirkzkfkueka:ETS9kvBGn0DKq3Qz@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres'
+    connectionString: 'postgresql://postgres.fbvhaeqfylrdhvvdcwzh:s3DrvDjukytv2AEB@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres'
   },
   {
     name: "Transaction Pooler (6543)",
-    connectionString: 'postgresql://postgres.khxrgdkgwirkzkfkueka:ETS9kvBGn0DKq3Qz@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true'
+    connectionString: 'postgresql://postgres.fbvhaeqfylrdhvvdcwzh:s3DrvDjukytv2AEB@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true'
   }
 ];
 

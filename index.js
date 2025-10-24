@@ -25,8 +25,8 @@ if (missingEnvVars.length > 0) {
 const { createClient } = require("@supabase/supabase-js");
 
 // Initialize Supabase with fallback values for development
-const supabaseUrl = process.env.SUPABASE_URL || 'https://khxrgdkgwirkzkfkueka.supabase.co';
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoeHJnZGtnd2lya3prZmt1ZWthIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNTUxNTcsImV4cCI6MjA3NjYzMTE1N30.XQMki6Pg68JKRZc0ZZywJnT_tIc97Ic4aj11w2le5oo';
+const supabaseUrl = process.env.SUPABASE_URL || 'https://fbvhaeqfylrdhvvdcwzh.supabase.co';
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZidmhhZXFmeWxyZGh2dmRjd3poIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyOTA0OTcsImV4cCI6MjA3Njg2NjQ5N30.VOY-V-BG-9OS3n-R-S95kWxIeAGfnPzdPM_62lUJThE';
 
 if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === 'undefined' || supabaseAnonKey === 'undefined') {
   console.error('⚠️ Supabase configuration is missing or invalid!');

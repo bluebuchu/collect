@@ -4,15 +4,15 @@
 
 ### 1. Supabase Auth (필수)
 ```env
-VITE_SUPABASE_URL=https://khxrgdkgwirkzkfkueka.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoeHJnZGtnd2lya3prZmt1ZWthIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNTUxNTcsImV4cCI6MjA3NjYzMTE1N30.XQMki6Pg68JKRZc0ZZywJnT_tIc97Ic4aj11w2le5oo
+VITE_SUPABASE_URL=https://fbvhaeqfylrdhvvdcwzh.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZidmhhZXFmeWxyZGh2dmRjd3poIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyOTA0OTcsImV4cCI6MjA3Njg2NjQ5N30.VOY-V-BG-9OS3n-R-S95kWxIeAGfnPzdPM_62lUJThE
 ```
 
 ### 2. 기존 환경 변수 (유지)
 ```env
-SUPABASE_URL=https://khxrgdkgwirkzkfkueka.supabase.co
-SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoeHJnZGtnd2lya3prZmt1ZWthIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNTUxNTcsImV4cCI6MjA3NjYzMTE1N30.XQMki6Pg68JKRZc0ZZywJnT_tIc97Ic4aj11w2le5oo
-SUPABASE_DATABASE_URL=postgresql://postgres:s3DrvDjukytv2AEB@db.khxrgdkgwirkzkfkueka.supabase.co:5432/postgres
+SUPABASE_URL=https://fbvhaeqfylrdhvvdcwzh.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZidmhhZXFmeWxyZGh2dmRjd3poIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyOTA0OTcsImV4cCI6MjA3Njg2NjQ5N30.VOY-V-BG-9OS3n-R-S95kWxIeAGfnPzdPM_62lUJThE
+SUPABASE_DATABASE_URL=postgresql://postgres:s3DrvDjukytv2AEB@db.fbvhaeqfylrdhvvdcwzh.supabase.co:5432/postgres
 SESSION_SECRET=generate-secure-random-string-here
 NODE_ENV=production
 ```

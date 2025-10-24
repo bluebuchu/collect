@@ -10,19 +10,19 @@ dotenv.config();
 const configs = [
   {
     name: "Direct connection (port 5432)",
-    url: `postgresql://postgres.khxrgdkgwirkzkfkueka:s3DrvDjukytv2AEB@db.khxrgdkgwirkzkfkueka.supabase.co:5432/postgres`
+    url: `postgresql://postgres.fbvhaeqfylrdhvvdcwzh:s3DrvDjukytv2AEB@db.fbvhaeqfylrdhvvdcwzh.supabase.co:5432/postgres`
   },
   {
     name: "Pooler connection (port 6543)",
-    url: `postgresql://postgres.khxrgdkgwirkzkfkueka:s3DrvDjukytv2AEB@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres`
+    url: `postgresql://postgres.fbvhaeqfylrdhvvdcwzh:s3DrvDjukytv2AEB@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres`
   },
   {
     name: "Transaction pooler (port 6543)",
-    url: `postgresql://postgres.khxrgdkgwirkzkfkueka:s3DrvDjukytv2AEB@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true`
+    url: `postgresql://postgres.fbvhaeqfylrdhvvdcwzh:s3DrvDjukytv2AEB@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true`
   },
   {
     name: "Session pooler (port 5432)",
-    url: `postgresql://postgres.khxrgdkgwirkzkfkueka:s3DrvDjukytv2AEB@aws-0-ap-northeast-2.pooler.supabase.com:5432/postgres`
+    url: `postgresql://postgres.fbvhaeqfylrdhvvdcwzh:s3DrvDjukytv2AEB@aws-0-ap-northeast-2.pooler.supabase.com:5432/postgres`
   }
 ];
 

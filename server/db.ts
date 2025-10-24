@@ -13,8 +13,12 @@ export const supabase = createClient(
   process.env.SUPABASE_ANON_KEY!
 );
 
-// Use Supabase database URL if available, otherwise fallback to local
-const DATABASE_URL = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL || "postgresql://user:password@localhost:5432/db";
+// Use Supabase database URL (required)
+const DATABASE_URL = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
+
+if (!DATABASE_URL) {
+  throw new Error("SUPABASE_DATABASE_URL or DATABASE_URL is required in environment variables");
+}
 
 // PostgreSQL pool for Drizzle ORM
 export const pool = new Pool({ 
@@ -22,6 +26,9 @@ export const pool = new Pool({
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 // Drizzle ORM instance with schema
