@@ -1004,8 +1004,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserCommunities(userId: number): Promise<any[]> {
-    // Placeholder implementation
-    return [];
+    try {
+      const userCommunitiesResult = await db
+        .select({
+          id: communities.id,
+          name: communities.name,
+          description: communities.description,
+          category: communities.category,
+          isPublic: communities.isPublic,
+          memberCount: communities.memberCount,
+          createdAt: communities.createdAt,
+          role: communityMembers.role,
+          joinedAt: communityMembers.joinedAt,
+        })
+        .from(communityMembers)
+        .innerJoin(communities, eq(communityMembers.communityId, communities.id))
+        .where(eq(communityMembers.userId, userId))
+        .orderBy(desc(communityMembers.joinedAt));
+
+      console.log(`Found ${userCommunitiesResult.length} communities for user ${userId}`);
+      return userCommunitiesResult;
+    } catch (error) {
+      console.error("Error fetching user communities:", error);
+      return [];
+    }
   }
 
   async getCommunityByName(name: string): Promise<any | undefined> {
