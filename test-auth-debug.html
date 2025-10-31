@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth Debug Test</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .log {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        h2 { color: #333; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Auth Debug Test</h1>
+    
+    <div class="container">
+        <h2>LocalStorage 상태</h2>
+        <button onclick="checkLocalStorage()">LocalStorage 확인</button>
+        <button onclick="clearLocalStorage()">LocalStorage 초기화</button>
+        <div id="storageLog" class="log"></div>
+    </div>
+
+    <div class="container">
+        <h2>로그인 테스트</h2>
+        <input type="email" id="loginEmail" placeholder="이메일" value="test@example.com">
+        <input type="password" id="loginPassword" placeholder="비밀번호" value="test123">
+        <br>
+        <button onclick="testLogin()">로그인 테스트</button>
+        <div id="loginLog" class="log"></div>
+    </div>
+
+    <div class="container">
+        <h2>API 호출 테스트</h2>
+        <button onclick="testGetMe()">GET /api/auth/me</button>
+        <button onclick="testAddSentence()">POST /api/sentences (문장 등록)</button>
+        <div id="apiLog" class="log"></div>
+    </div>
+
+    <script>
+        function log(elementId, message, type = '') {
+            const logDiv = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<div class="${type}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function checkLocalStorage() {
+            const keys = ['auth_token', 'supabase_token', 'jwt', 'token'];
+            let output = 'LocalStorage 내용:\n';
+            
+            keys.forEach(key => {
+                const value = localStorage.getItem(key);
+                output += `${key}: ${value ? value.substring(0, 50) + '...' : 'null'}\n`;
+            });
+            
+            // 모든 localStorage 키 확인
+            output += '\n모든 키:\n';
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                if (key.includes('token') || key.includes('auth')) {
+                    output += `${key}: ${value ? value.substring(0, 50) + '...' : 'null'}\n`;
+                }
+            }
+            
+            log('storageLog', output, 'info');
+        }
+
+        function clearLocalStorage() {
+            localStorage.clear();
+            sessionStorage.clear();
+            log('storageLog', 'LocalStorage와 SessionStorage를 초기화했습니다.', 'success');
+            checkLocalStorage();
+        }
+
+        async function testLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            log('loginLog', `로그인 시도: ${email}`, 'info');
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('loginLog', '로그인 성공!', 'success');
+                    log('loginLog', 'Response: ' + JSON.stringify(data, null, 2), 'info');
+                    
+                    // 토큰 저장
+                    if (data.token) {
+                        localStorage.setItem('auth_token', data.token);
+                        log('loginLog', 'Token saved to localStorage', 'success');
+                    }
+                    
+                    // LocalStorage 재확인
+                    setTimeout(() => checkLocalStorage(), 100);
+                } else {
+                    log('loginLog', `로그인 실패: ${data.error || data.message}`, 'error');
+                }
+            } catch (error) {
+                log('loginLog', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testGetMe() {
+            log('apiLog', 'GET /api/auth/me 호출 중...', 'info');
+            
+            // 토큰 가져오기
+            const token = localStorage.getItem('auth_token') || localStorage.getItem('supabase_token');
+            
+            const headers = {};
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+                log('apiLog', `Authorization header: Bearer ${token.substring(0, 20)}...`, 'info');
+            } else {
+                log('apiLog', 'No token found in localStorage', 'error');
+            }
+            
+            try {
+                const response = await fetch('/api/auth/me', {
+                    method: 'GET',
+                    headers: headers,
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('apiLog', 'Success: ' + JSON.stringify(data, null, 2), 'success');
+                } else {
+                    log('apiLog', `Error ${response.status}: ${JSON.stringify(data)}`, 'error');
+                }
+            } catch (error) {
+                log('apiLog', `Fetch error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAddSentence() {
+            log('apiLog', 'POST /api/sentences 호출 중...', 'info');
+            
+            // 토큰 가져오기
+            const token = localStorage.getItem('auth_token') || localStorage.getItem('supabase_token');
+            
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+                log('apiLog', `Authorization header: Bearer ${token.substring(0, 20)}...`, 'info');
+            } else {
+                log('apiLog', 'No token found in localStorage', 'error');
+            }
+            
+            const sentenceData = {
+                content: '테스트 문장입니다. ' + new Date().toLocaleString(),
+                bookTitle: '테스트 책',
+                author: '테스트 저자',
+                isPublic: 0
+            };
+            
+            try {
+                const response = await fetch('/api/sentences', {
+                    method: 'POST',
+                    headers: headers,
+                    credentials: 'include',
+                    body: JSON.stringify(sentenceData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('apiLog', 'Success: ' + JSON.stringify(data, null, 2), 'success');
+                } else {
+                    log('apiLog', `Error ${response.status}: ${JSON.stringify(data)}`, 'error');
+                }
+            } catch (error) {
+                log('apiLog', `Fetch error: ${error.message}`, 'error');
+            }
+        }
+
+        // 페이지 로드 시 자동으로 LocalStorage 확인
+        window.onload = () => {
+            checkLocalStorage();
+        };
+    </script>
+</body>
+</html>

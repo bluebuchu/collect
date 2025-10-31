@@ -49,8 +49,12 @@ export async function apiRequest(
     data = dataOrOptions;
   }
     
+  const authHeaders = getAuthHeaders();
+  console.log('[apiRequest] Auth headers:', authHeaders);
+  console.log('[apiRequest] URL:', url, 'Method:', method);
+  
   const headers: HeadersInit = {
-    ...getAuthHeaders(),
+    ...authHeaders,
   };
   
   if (data) {
