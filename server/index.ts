@@ -65,7 +65,7 @@ app.use(session({
   cookie: {
     secure: isProduction && !isVercel, // Vercel handles HTTPS automatically
     httpOnly: true,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    maxAge: 60 * 60 * 1000, // 1 hour
     sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-domain in production
     // domain 설정 제거 - 브라우저가 자동으로 처리하도록 함
     path: '/'

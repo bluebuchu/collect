@@ -112,6 +112,9 @@ export function useLogin() {
       // Store JWT token if provided
       if (result.token) {
         setToken(result.token);
+        console.log("[Login] JWT token stored successfully");
+      } else {
+        console.warn("[Login] No JWT token received from server");
       }
       
       return result;
@@ -167,6 +170,9 @@ export function useRegister() {
       // Store JWT token if provided
       if (result.token) {
         setToken(result.token);
+        console.log("[Register] JWT token stored successfully");
+      } else {
+        console.warn("[Register] No JWT token received from server");
       }
       
       return result;

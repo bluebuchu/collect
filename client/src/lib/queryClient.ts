@@ -18,6 +18,15 @@ async function throwIfResNotOk(res: Response) {
       console.error('Error parsing response:', e);
     }
     
+    // 401 에러시 자동 로그아웃 처리
+    if (res.status === 401) {
+      console.warn('[401 Error] Authentication failed - clearing tokens');
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('supabase_token');
+      // 첫 페이지(랜딩 페이지)로 리디렉션
+      window.location.href = '/';
+    }
+    
     throw new Error(`${res.status}: ${errorMessage}`);
   }
 }
@@ -52,6 +61,11 @@ export async function apiRequest(
   const authHeaders = getAuthHeaders();
   console.log('[apiRequest] Auth headers:', authHeaders);
   console.log('[apiRequest] URL:', url, 'Method:', method);
+  
+  // JWT 토큰이 없으면 경고 로그
+  if (!authHeaders.Authorization) {
+    console.warn('[apiRequest] No JWT token found - relying on session authentication');
+  }
   
   const headers: HeadersInit = {
     ...authHeaders,

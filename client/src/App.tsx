@@ -19,6 +19,7 @@ import NotFound from "@/pages/not-found";
 import BookClubsList from "@/pages/book-clubs/book-clubs-list";
 import BookClubDetail from "@/pages/book-clubs/book-club-detail";
 import { useAuth } from "@/hooks/useAuth";
+import { useActivityTracker } from "@/hooks/useActivityTracker";
 
 // Error Boundary 컴포넌트 추가
 class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean, error: any}> {
@@ -62,6 +63,9 @@ class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean,
 
 function Router() {
   const { user, isAuthenticated, isLoading } = useAuth();
+  
+  // 사용자 활동 추적 및 자동 토큰 갱신
+  useActivityTracker();
   
   // 로딩 중일 때 표시
   if (isLoading) {

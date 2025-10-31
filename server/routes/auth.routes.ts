@@ -565,4 +565,41 @@ router.post("/api/auth/sync", async (req: AuthRequest, res) => {
   }
 });
 
+// Token refresh endpoint
+router.post("/api/auth/refresh", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user?.id || req.session?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "인증이 필요합니다" });
+    }
+
+    // Get user data for new token
+    const user = await storage.getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+    }
+
+    // Generate new JWT token
+    const newToken = generateToken({
+      userId: user.id,
+      email: user.email,
+      nickname: user.nickname
+    });
+
+    // Update session expiry
+    if (req.session) {
+      req.session.touch(); // Refresh session expiry
+    }
+
+    console.log(`Token refreshed for user ${userId}`);
+    res.json({ 
+      token: newToken,
+      message: "토큰이 갱신되었습니다"
+    });
+  } catch (error: any) {
+    console.error("Token refresh error:", error);
+    res.status(500).json({ error: "토큰 갱신 중 오류가 발생했습니다" });
+  }
+});
+
 export default router;
