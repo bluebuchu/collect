@@ -16,24 +16,11 @@ import path from "path";
 import fs from "fs";
 import passport from "passport";
 import { generateToken, jwtAuthMiddleware, requireJwtAuth } from "../jwt-auth";
+import { put } from "@vercel/blob";
 
-// Configure multer for file uploads
-const multerStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = 'server/uploads/profiles';
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, `profile-${uniqueSuffix}${path.extname(file.originalname)}`);
-  }
-});
-
+// Configure multer for file uploads - using memory storage for Vercel Blob
 const upload = multer({ 
-  storage: multerStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif|webp/;
@@ -281,8 +268,26 @@ router.put("/api/auth/profile", requireAuth, upload.single('profileImage'), asyn
       }
     }
     
+    // Handle profile image upload using Vercel Blob
     if (req.file) {
-      validatedData.profileImage = `/uploads/profiles/${req.file.filename}`;
+      try {
+        // Generate unique filename
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const filename = `profile-${uniqueSuffix}${path.extname(req.file.originalname)}`;
+        
+        // Upload to Vercel Blob
+        const blob = await put(filename, req.file.buffer, {
+          access: 'public',
+          contentType: req.file.mimetype,
+        });
+        
+        // Store the blob URL
+        validatedData.profileImage = blob.url;
+        console.log('Profile image uploaded to Vercel Blob:', blob.url);
+      } catch (blobError) {
+        console.error('Vercel Blob upload error:', blobError);
+        return res.status(500).json({ error: "이미지 업로드에 실패했습니다" });
+      }
     }
     
     const updatedUser = await storage.updateUser(userId, validatedData);
