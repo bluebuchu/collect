@@ -271,22 +271,39 @@ router.put("/api/auth/profile", requireAuth, upload.single('profileImage'), asyn
     // Handle profile image upload using Vercel Blob
     if (req.file) {
       try {
+        // Check if Vercel Blob token is available
+        const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
+        if (!blobToken) {
+          console.error('BLOB_READ_WRITE_TOKEN environment variable not found');
+          return res.status(500).json({ error: "이미지 업로드 설정이 올바르지 않습니다" });
+        }
+        
         // Generate unique filename
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         const filename = `profile-${uniqueSuffix}${path.extname(req.file.originalname)}`;
         
-        // Upload to Vercel Blob
+        console.log('Uploading to Vercel Blob:', filename, 'Size:', req.file.buffer.length);
+        
+        // Upload to Vercel Blob with explicit token
         const blob = await put(filename, req.file.buffer, {
           access: 'public',
           contentType: req.file.mimetype,
+          token: blobToken,
         });
         
         // Store the blob URL
         validatedData.profileImage = blob.url;
-        console.log('Profile image uploaded to Vercel Blob:', blob.url);
-      } catch (blobError) {
-        console.error('Vercel Blob upload error:', blobError);
-        return res.status(500).json({ error: "이미지 업로드에 실패했습니다" });
+        console.log('Profile image uploaded to Vercel Blob successfully:', blob.url);
+      } catch (blobError: any) {
+        console.error('Vercel Blob upload error:', {
+          message: blobError.message,
+          stack: blobError.stack,
+          details: blobError
+        });
+        return res.status(500).json({ 
+          error: "이미지 업로드에 실패했습니다",
+          details: process.env.NODE_ENV === 'development' ? blobError.message : undefined
+        });
       }
     }
     
