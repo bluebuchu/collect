@@ -45,12 +45,16 @@ export default function Home() {
   const [isGlassmorphismOpen, setIsGlassmorphismOpen] = useState(false);
   const [noteSentence, setNoteSentence] = useState<SentenceWithUser | null>(null);
   
-  // Auto-show daily sentence only on initial login
+  // Auto-show daily sentence only once per day (based on date, not login)
   useEffect(() => {
-    const hasShownToday = sessionStorage.getItem('hasShownDailySentence');
-    if (user && isAuthenticated && !hasShownToday) {
-      setIsGlassmorphismOpen(true);
-      sessionStorage.setItem('hasShownDailySentence', 'true');
+    if (user && isAuthenticated) {
+      const today = new Date().toDateString();
+      const lastDailySentenceDate = localStorage.getItem('lastDailySentenceDate');
+      
+      if (lastDailySentenceDate !== today) {
+        setIsGlassmorphismOpen(true);
+        localStorage.setItem('lastDailySentenceDate', today);
+      }
     }
   }, [user, isAuthenticated]); // Watch auth state changes
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);

@@ -355,7 +355,21 @@ router.put("/api/sentences/:id", requireAuth, async (req: AuthRequest, res) => {
       return res.status(403).json({ error: "이 문장을 수정할 권한이 없습니다" });
     }
     
-    const updatedSentence = await storage.updateSentence(id, validatedData);
+    console.log("=== UPDATE SENTENCE DEBUG ===");
+    console.log("ID:", id, "UserID:", userId);
+    console.log("Data:", validatedData);
+    
+    const updatedSentence = await storage.updateSentence(id, validatedData, userId);
+    
+    console.log("Result:", updatedSentence);
+    console.log("========================");
+    
+    if (!updatedSentence) {
+      console.log("❌ No updated sentence returned");
+      return res.status(500).json({ error: "문장 수정에 실패했습니다" });
+    }
+    
+    console.log("✅ Sending response:", JSON.stringify(updatedSentence));
     res.json(updatedSentence);
   } catch (error: any) {
     console.error("Error updating sentence:", error);

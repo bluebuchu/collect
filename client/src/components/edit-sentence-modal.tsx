@@ -20,7 +20,6 @@ export default function EditSentenceModal({ sentence, open, onClose }: EditSente
   const [content, setContent] = useState("");
   const [bookTitle, setBookTitle] = useState("");
   const [author, setAuthor] = useState("");
-  const [password, setPassword] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -30,7 +29,6 @@ export default function EditSentenceModal({ sentence, open, onClose }: EditSente
       setContent(sentence.content);
       setBookTitle(sentence.bookTitle || "");
       setAuthor(sentence.author || "");
-      setPassword("");
     }
   }, [sentence]);
 
@@ -61,10 +59,23 @@ export default function EditSentenceModal({ sentence, open, onClose }: EditSente
         title: "수정 완료",
         description: "문장이 성공적으로 수정되었습니다.",
       });
-      // Invalidate queries to refresh data
+      
+      // Invalidate all sentence-related queries to refresh data
+      console.log('Invalidating queries...');
       queryClient.invalidateQueries({ queryKey: ["/api/sentences"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/sentences/search"] });
       queryClient.invalidateQueries({ queryKey: ["/api/sentences/my"] });
       queryClient.invalidateQueries({ queryKey: ["/api/sentences/community"] });
+      
+      // Also invalidate any query that starts with /api/sentences
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/sentences');
+        }
+      });
+      
+      console.log('Queries invalidated, closing modal');
       onClose();
       clearForm();
     },
@@ -82,17 +93,16 @@ export default function EditSentenceModal({ sentence, open, onClose }: EditSente
     setContent("");
     setBookTitle("");
     setAuthor("");
-    setPassword("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Edit form submitted with:", { nickname, content, bookTitle, author, password: "***" });
+    console.log("Edit form submitted with:", { nickname, content, bookTitle, author });
     
-    if (!nickname.trim() || !content.trim() || !password.trim()) {
+    if (!nickname.trim() || !content.trim()) {
       toast({
         title: "입력 오류",
-        description: "닉네임, 문장 내용, 비밀번호는 필수 입력 항목입니다.",
+        description: "닉네임과 문장 내용은 필수 입력 항목입니다.",
         variant: "destructive",
       });
       return;
@@ -103,7 +113,6 @@ export default function EditSentenceModal({ sentence, open, onClose }: EditSente
       content: content.trim(),
       bookTitle: bookTitle.trim() || null,
       author: author.trim() || null,
-      password: password.trim(),
     };
     console.log("Calling updateMutation with:", updateData);
     updateMutation.mutate(updateData);
@@ -169,17 +178,6 @@ export default function EditSentenceModal({ sentence, open, onClose }: EditSente
             />
           </div>
 
-          <div>
-            <Label htmlFor="password">비밀번호 *</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="등록할 때 사용한 비밀번호"
-              disabled={updateMutation.isPending}
-            />
-          </div>
 
           <div className="flex gap-3 pt-4">
             <Button
