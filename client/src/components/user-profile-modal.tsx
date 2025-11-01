@@ -71,6 +71,7 @@ export default function UserProfileModal({ open, onClose }: UserProfileModalProp
       });
       
       console.log('Upload response status:', response.status);
+      console.log('Upload response headers:', Object.fromEntries(response.headers.entries()));
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
@@ -81,7 +82,9 @@ export default function UserProfileModal({ open, onClose }: UserProfileModalProp
         throw new Error(errorData.error || errorData.message || 'Upload failed');
       }
       
-      return response.json();
+      const responseData = await response.json();
+      console.log('Upload success response:', responseData);
+      return responseData;
     },
     onSuccess: (data) => {
       console.log('Profile image uploaded successfully:', data);

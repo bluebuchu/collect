@@ -63,15 +63,15 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: isProduction && !isVercel, // Vercel handles HTTPS automatically
+    secure: isProduction, // Always secure in production (Vercel handles HTTPS)
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-domain in production
-    // domain 설정 제거 - 브라우저가 자동으로 처리하도록 함
+    sameSite: isProduction ? 'lax' : 'lax', // Use 'lax' instead of 'none' for better compatibility
     path: '/'
   },
   name: 'sessionId',
-  proxy: isVercel // Trust proxy in Vercel environment
+  proxy: isVercel, // Trust proxy in Vercel environment
+  rolling: true // Refresh session expiration on each request
 }));
 
 // JWT 인증 미들웨어 추가 (session 이전에 실행되도록)

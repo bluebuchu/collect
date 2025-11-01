@@ -318,11 +318,27 @@ router.put("/api/auth/profile", requireAuth, upload.single('profileImage'), asyn
       }
     }
     
+    console.log('Updating user in database:', userId, 'with data:', validatedData);
     const updatedUser = await storage.updateUser(userId, validatedData);
+    console.log('User updated successfully:', updatedUser.id, updatedUser.profileImage);
     
+    // Update session data
     req.session.user = updatedUser;
     
-    res.json({ 
+    // Force session save to prevent session loss
+    await new Promise<void>((resolve, reject) => {
+      req.session!.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          reject(err);
+        } else {
+          console.log('Session saved successfully for user:', userId);
+          resolve();
+        }
+      });
+    });
+    
+    const responseData = {
       user: {
         id: updatedUser.id,
         email: updatedUser.email,
@@ -331,7 +347,10 @@ router.put("/api/auth/profile", requireAuth, upload.single('profileImage'), asyn
         bio: updatedUser.bio
       },
       message: "프로필이 업데이트되었습니다"
-    });
+    };
+    
+    console.log('Sending success response:', responseData);
+    res.status(200).json(responseData);
   } catch (error: any) {
     console.error("Profile update error:", error);
     if (error.errors) {
