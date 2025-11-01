@@ -60,18 +60,17 @@ const isVercel = process.env.VERCEL === '1';
 
 app.use(session({
   secret: process.env.SESSION_SECRET || 'sentence-collection-secret-key-2025',
-  resave: false,
+  resave: true, // Allow session resaving for Vercel compatibility
   saveUninitialized: false,
   cookie: {
     secure: isProduction, // Always secure in production (Vercel handles HTTPS)
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    sameSite: isProduction ? 'lax' : 'lax', // Use 'lax' instead of 'none' for better compatibility
+    sameSite: isProduction ? 'lax' : 'lax', // Use 'lax' for better compatibility
     path: '/'
   },
   name: 'sessionId',
-  proxy: isVercel, // Trust proxy in Vercel environment
-  rolling: true // Refresh session expiration on each request
+  proxy: isVercel // Trust proxy in Vercel environment
 }));
 
 // JWT 인증 미들웨어 추가 (session 이전에 실행되도록)

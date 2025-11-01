@@ -322,21 +322,8 @@ router.put("/api/auth/profile", requireAuth, upload.single('profileImage'), asyn
     const updatedUser = await storage.updateUser(userId, validatedData);
     console.log('User updated successfully:', updatedUser.id, updatedUser.profileImage);
     
-    // Update session data
+    // Update session data (let express-session handle saving automatically)
     req.session.user = updatedUser;
-    
-    // Force session save to prevent session loss
-    await new Promise<void>((resolve, reject) => {
-      req.session!.save((err) => {
-        if (err) {
-          console.error('Session save error:', err);
-          reject(err);
-        } else {
-          console.log('Session saved successfully for user:', userId);
-          resolve();
-        }
-      });
-    });
     
     const responseData = {
       user: {
