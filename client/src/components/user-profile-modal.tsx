@@ -49,14 +49,25 @@ export default function UserProfileModal({ open, onClose }: UserProfileModalProp
       if (user?.nickname) formData.append('nickname', user.nickname);
       if (user?.bio) formData.append('bio', user.bio);
       
+      // Get JWT token from localStorage for authorization
+      const token = localStorage.getItem('token');
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       const response = await fetch('/api/auth/profile', {
         method: 'PUT',
+        headers,
         body: formData,
         credentials: 'include',
       });
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
+        if (response.status === 401) {
+          throw new Error('로그인이 필요합니다. 다시 로그인해주세요.');
+        }
         throw new Error(errorData.message || 'Upload failed');
       }
       
