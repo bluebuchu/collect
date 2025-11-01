@@ -255,16 +255,27 @@ router.get("/api/auth/me", authMiddleware, async (req: AuthRequest, res) => {
 router.put("/api/auth/profile", requireAuth, upload.single('profileImage'), async (req: AuthRequest, res) => {
   try {
     const userId = req.session!.userId!;
-    const validatedData = updateUserSchema.parse(req.body);
+    
+    // Get current user data first
+    const currentUser = await storage.getUserById(userId);
+    if (!currentUser) {
+      return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+    }
+    
+    // Prepare update data - preserve existing data if not provided
+    const updateData: any = {
+      nickname: req.body.nickname || currentUser.nickname,
+      bio: req.body.bio !== undefined ? req.body.bio : currentUser.bio,
+    };
+    
+    // Validate the data
+    const validatedData = updateUserSchema.parse(updateData);
     
     // Check for duplicate nickname if changing nickname
-    if (validatedData.nickname) {
-      const currentUser = await storage.getUserById(userId);
-      if (currentUser && currentUser.nickname !== validatedData.nickname) {
-        const existingNickname = await storage.getUserByNickname(validatedData.nickname);
-        if (existingNickname) {
-          return res.status(400).json({ error: "이미 사용 중인 닉네임입니다" });
-        }
+    if (validatedData.nickname && validatedData.nickname !== currentUser.nickname) {
+      const existingNickname = await storage.getUserByNickname(validatedData.nickname);
+      if (existingNickname) {
+        return res.status(400).json({ error: "이미 사용 중인 닉네임입니다" });
       }
     }
     
@@ -282,7 +293,7 @@ router.put("/api/auth/profile", requireAuth, upload.single('profileImage'), asyn
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         const filename = `profile-${uniqueSuffix}${path.extname(req.file.originalname)}`;
         
-        console.log('Uploading to Vercel Blob:', filename, 'Size:', req.file.buffer.length);
+        console.log('Uploading to Vercel Blob:', filename, 'Size:', req.file.buffer.length, 'User:', userId);
         
         // Upload to Vercel Blob with explicit token
         const blob = await put(filename, req.file.buffer, {
@@ -293,7 +304,7 @@ router.put("/api/auth/profile", requireAuth, upload.single('profileImage'), asyn
         
         // Store the blob URL
         validatedData.profileImage = blob.url;
-        console.log('Profile image uploaded to Vercel Blob successfully:', blob.url);
+        console.log('Profile image uploaded to Vercel Blob successfully:', blob.url, 'for user:', userId);
       } catch (blobError: any) {
         console.error('Vercel Blob upload error:', {
           message: blobError.message,

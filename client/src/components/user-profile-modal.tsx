@@ -45,9 +45,7 @@ export default function UserProfileModal({ open, onClose }: UserProfileModalProp
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append('profileImage', file);
-      // Keep existing profile data
-      if (user?.nickname) formData.append('nickname', user.nickname);
-      if (user?.bio) formData.append('bio', user.bio);
+      // No need to send existing profile data - server will preserve it
       
       // Get JWT token from localStorage for authorization
       const token = localStorage.getItem('token');
@@ -56,6 +54,8 @@ export default function UserProfileModal({ open, onClose }: UserProfileModalProp
         headers['Authorization'] = `Bearer ${token}`;
       }
       
+      console.log('Uploading profile image:', file.name, 'Size:', file.size);
+      
       const response = await fetch('/api/auth/profile', {
         method: 'PUT',
         headers,
@@ -63,12 +63,15 @@ export default function UserProfileModal({ open, onClose }: UserProfileModalProp
         credentials: 'include',
       });
       
+      console.log('Upload response status:', response.status);
+      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
+        console.error('Upload error:', errorData);
         if (response.status === 401) {
           throw new Error('로그인이 필요합니다. 다시 로그인해주세요.');
         }
-        throw new Error(errorData.message || 'Upload failed');
+        throw new Error(errorData.error || errorData.message || 'Upload failed');
       }
       
       return response.json();
