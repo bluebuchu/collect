@@ -45,21 +45,18 @@ export default function UserProfileModal({ open, onClose }: UserProfileModalProp
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append('profileImage', file);
-      // No need to send existing profile data - server will preserve it
       
-      // Get JWT token from localStorage for authorization
-      // Try multiple possible token keys
-      const token = localStorage.getItem('auth_token') || 
-                   localStorage.getItem('supabase_token') || 
-                   localStorage.getItem('token');
-      
-      const headers: HeadersInit = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-        console.log('Using JWT token for authorization');
+      // Send current user ID directly to server
+      if (user?.id) {
+        formData.append('userId', user.id.toString());
+        console.log('Sending userId:', user.id);
       } else {
-        console.log('No JWT token found, relying on session cookies');
+        throw new Error('사용자 정보를 찾을 수 없습니다');
       }
+      
+      // No need for complex JWT handling - using direct userId approach
+      const headers: HeadersInit = {};
+      console.log('Using simple userId-based upload');
       
       console.log('Uploading profile image:', file.name, 'Size:', file.size);
       

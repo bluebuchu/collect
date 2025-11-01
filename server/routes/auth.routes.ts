@@ -251,21 +251,20 @@ router.get("/api/auth/me", authMiddleware, async (req: AuthRequest, res) => {
   }
 });
 
-// Update profile
-router.put("/api/auth/profile", requireAuth, upload.single('profileImage'), async (req: AuthRequest, res) => {
+// Update profile - SIMPLE AND RELIABLE VERSION
+router.put("/api/auth/profile", upload.single('profileImage'), async (req: AuthRequest, res) => {
   console.log('[DEBUG] Profile update request received');
-  console.log('[DEBUG] Session userId:', req.session?.userId);
-  console.log('[DEBUG] JWT user:', req.user?.id);
+  console.log('[DEBUG] Request body:', req.body);
   try {
-    // Get userId from JWT (preferred) or session (fallback)
-    const userId = req.user?.id || req.session?.userId;
+    // Get userId from request body (sent by client)
+    const userId = req.body.userId;
     
     if (!userId) {
-      console.log('[DEBUG] No user ID found in JWT or session');
-      return res.status(401).json({ error: "인증이 필요합니다" });
+      console.log('[DEBUG] No userId in request body');
+      return res.status(400).json({ error: "사용자 ID가 필요합니다" });
     }
     
-    console.log('[DEBUG] Using userId:', userId);
+    console.log('[DEBUG] Using userId from request:', userId);
     
     // Get current user data first
     const currentUser = await storage.getUserById(userId);
@@ -335,13 +334,8 @@ router.put("/api/auth/profile", requireAuth, upload.single('profileImage'), asyn
     const updatedUser = await storage.updateUser(userId, validatedData);
     console.log('User updated successfully:', updatedUser.id, updatedUser.profileImage);
     
-    // Only update session if we're using session authentication
-    if (req.session?.userId === userId) {
-      req.session.user = updatedUser;
-      console.log('[DEBUG] Session updated for user:', userId);
-    } else {
-      console.log('[DEBUG] Skipping session update - using JWT authentication');
-    }
+    // DO NOT update session - prevent logout issues
+    console.log('[DEBUG] Skipping session update to prevent logout');
     
     const responseData = {
       user: {
