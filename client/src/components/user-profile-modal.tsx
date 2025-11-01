@@ -48,10 +48,17 @@ export default function UserProfileModal({ open, onClose }: UserProfileModalProp
       // No need to send existing profile data - server will preserve it
       
       // Get JWT token from localStorage for authorization
-      const token = localStorage.getItem('token');
+      // Try multiple possible token keys
+      const token = localStorage.getItem('auth_token') || 
+                   localStorage.getItem('supabase_token') || 
+                   localStorage.getItem('token');
+      
       const headers: HeadersInit = {};
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
+        console.log('Using JWT token for authorization');
+      } else {
+        console.log('No JWT token found, relying on session cookies');
       }
       
       console.log('Uploading profile image:', file.name, 'Size:', file.size);
