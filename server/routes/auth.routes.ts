@@ -251,14 +251,20 @@ router.get("/api/auth/me", authMiddleware, async (req: AuthRequest, res) => {
   }
 });
 
-// Update profile - TEMPORARILY REMOVE requireAuth for debugging
-router.put("/api/auth/profile", upload.single('profileImage'), async (req: AuthRequest, res) => {
+// Update profile
+router.put("/api/auth/profile", requireAuth, upload.single('profileImage'), async (req: AuthRequest, res) => {
   console.log('[DEBUG] Profile update request received');
-  console.log('[DEBUG] Session:', req.session);
-  console.log('[DEBUG] Headers:', req.headers.authorization);
+  console.log('[DEBUG] Session userId:', req.session?.userId);
+  console.log('[DEBUG] JWT user:', req.user?.id);
   try {
-    // Get userId from session or use hardcoded for testing
-    const userId = req.session?.userId || 2; // TEMPORARY: Use user ID 2 for testing
+    // Get userId from JWT (preferred) or session (fallback)
+    const userId = req.user?.id || req.session?.userId;
+    
+    if (!userId) {
+      console.log('[DEBUG] No user ID found in JWT or session');
+      return res.status(401).json({ error: "인증이 필요합니다" });
+    }
+    
     console.log('[DEBUG] Using userId:', userId);
     
     // Get current user data first
@@ -329,8 +335,13 @@ router.put("/api/auth/profile", upload.single('profileImage'), async (req: AuthR
     const updatedUser = await storage.updateUser(userId, validatedData);
     console.log('User updated successfully:', updatedUser.id, updatedUser.profileImage);
     
-    // Update session data (let express-session handle saving automatically)
-    req.session.user = updatedUser;
+    // Only update session if we're using session authentication
+    if (req.session?.userId === userId) {
+      req.session.user = updatedUser;
+      console.log('[DEBUG] Session updated for user:', userId);
+    } else {
+      console.log('[DEBUG] Skipping session update - using JWT authentication');
+    }
     
     const responseData = {
       user: {
