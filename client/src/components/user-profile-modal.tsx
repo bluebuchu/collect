@@ -45,9 +45,12 @@ export default function UserProfileModal({ open, onClose }: UserProfileModalProp
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append('profileImage', file);
+      // Keep existing profile data
+      if (user?.nickname) formData.append('nickname', user.nickname);
+      if (user?.bio) formData.append('bio', user.bio);
       
-      const response = await fetch('/api/auth/upload-profile-image', {
-        method: 'POST',
+      const response = await fetch('/api/auth/profile', {
+        method: 'PUT',
         body: formData,
         credentials: 'include',
       });
