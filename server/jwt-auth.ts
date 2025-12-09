@@ -11,7 +11,7 @@ export interface TokenPayload {
 
 export function generateToken(payload: TokenPayload): string {
   return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: '1h'
+    expiresIn: '7d' // 1시간에서 7일로 변경
   });
 }
 
