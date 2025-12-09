@@ -236,6 +236,26 @@ export function requireAuth(req: AuthRequest, res: Response, next: NextFunction)
       message: '인증이 필요합니다. 로그인 해주세요.'
     });
   }
+  
+  // 세션 기반 인증 시에도 req.user 설정
+  if (!req.user && req.session?.userId) {
+    try {
+      const user = await storage.getUserById(req.session.userId);
+      if (user) {
+        req.user = {
+          id: user.id,
+          email: user.email,
+          nickname: user.nickname,
+          profileImage: user.profileImage || undefined,
+          bio: user.bio || undefined
+        };
+        console.log('[requireAuth] Session user loaded:', user.nickname);
+      }
+    } catch (error) {
+      console.error('[requireAuth] Failed to load session user:', error);
+    }
+  }
+  
   console.log('[requireAuth] Authenticated via session:', req.session.userId);
   next();
 }
